@@ -48,7 +48,7 @@ void init_vector(double *pv, long n, double value)
 int main(int argc, char *argv[])
 {
 
-    if (!__AVX512F) {
+    if (!__AVX512F__) {
         printf("AVX512 instructions not enabled");
         exit(0);
     }
