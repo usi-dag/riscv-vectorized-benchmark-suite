@@ -14,12 +14,12 @@ serial:
 
 vector:
 	echo "vector"
-	${LLVM}/bin/clang --target=riscv64-unknown-elf -march=rv64g  -O2 -c -o src/utils.o src/utils.c
-	${LLVM}/bin/clang --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -fno-vectorize -O2 -c -o src/axpy.o src/axpy.c
-	${LLVM}/bin/clang --target=riscv64-unknown-elf -march=rv64g  -O2 -c -o src/main.o src/main.c
-	${LLVM}/bin/clang --target=riscv64-unknown-elf -march=rv64g  -O2 -o bin/axpy_vector.exe src/*.o -lm
+	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -c -o src/utils.o src/utils.c
+	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64 -mavx -fno-vectorize -O2 -c -o src/axpy.o src/axpy.c
+	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -c -o src/main.o src/main.c
+	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -o bin/axpy_vector.exe src/*.o -lm
 	rm src/*.o
-	${LLVM}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/axpy_vector.exe > bin/axpy_vector.dump
+	${GCC}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/axpy_vector.exe > bin/axpy_vector.dump
 
 clean:
 	rm bin/*.dump; \

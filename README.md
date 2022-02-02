@@ -54,6 +54,12 @@ Setting the Vector Compiler path
 export LLVM=$TOP/epi-toolchain
 export PATH=$PATH:$LLVM/bin
 ```
+To use Intel intrinsics version compile with GCC or Clang with (to use Clang you need first to change
+the Makefile for each benchmark)
+```shell
+export GCC=$TOP/usr
+export PATH=$PATH:$GCC/bin
+```
 
 ### Compile using  clang for RISCV Vector Version
 
