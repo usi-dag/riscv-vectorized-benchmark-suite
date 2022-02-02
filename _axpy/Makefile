@@ -14,10 +14,10 @@ serial:
 
 vector:
 	echo "vector"
-	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -c -o src/utils.o src/utils.c
-	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64 -mavx -fno-vectorize -O2 -c -o src/axpy.o src/axpy.c
-	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -c -o src/main.o src/main.c
-	${GCC}/bin/gcc --target=x86_64-pc-linux-gnu -march=x86-64  -O2 -o bin/axpy_vector.exe src/*.o -lm
+	${GCC}/bin/gcc  -march=x86-64  -O3 -c -o src/utils.o src/utils.c
+	${GCC}/bin/gcc  -march=x86-64 -mavx512f -fno-tree-vectorize -O3 -c -o src/axpy.o src/axpy.c
+	${GCC}/bin/gcc  -march=x86-64  -mavx512f -O3 -c -o src/main.o src/main.c
+	${GCC}/bin/gcc  -march=x86-64  -O3 -o bin/axpy_vector.exe src/*.o -lm
 	rm src/*.o
 	${GCC}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/axpy_vector.exe > bin/axpy_vector.dump
 

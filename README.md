@@ -45,6 +45,10 @@ To compile for [rvv-1.0](https://github.com/RALC88/riscv-vectorized-benchmark-su
 
 Here you can find the [EPI Builtins reference for rvv-0.7](https://repo.hca.bsc.es/gitlab/rferrer/epi-builtins-ref/-/tree/EPI-0.7) used to target RISC-V V-extension.
 
+### Intel Intrinsics Guide
+
+Here you can find the [Intel Intrinsics Guide for AVX](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#) used to target AVX-512 architecture. 
+
 ### Setting up the environment
 
 The Suite includes a makefile to compile every application, in order to use it, you must define the path to the RISC-V vector compiler.
@@ -59,6 +63,11 @@ the Makefile for each benchmark)
 ```shell
 export GCC=$TOP/usr
 export PATH=$PATH:$GCC/bin
+```
+
+Possible target options
+```shell
+gcc -march=native -Q --help=target
 ```
 
 ### Compile using  clang for RISCV Vector Version

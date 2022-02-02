@@ -47,6 +47,12 @@ void init_vector(double *pv, long n, double value)
 
 int main(int argc, char *argv[])
 {
+
+    if (!__AVX512F) {
+        printf("AVX512 instructions not enabled");
+        exit(0);
+    }
+
     long long start,end;
     start = get_time();
 
