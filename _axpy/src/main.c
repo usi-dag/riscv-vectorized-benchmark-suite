@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     end = get_time();
     printf("init_vector time: %f\n", elapsed_time(start, end));
 
-    printf ("doing reference axpy , vector size %d\n",n);
+    printf ("doing reference axpy , vector size %ld\n",n);
     start = get_time();
 
     // Start instruction and cycles count of the region of interest
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     init_vector(dx, n, 1.0);
     init_vector(dy, n, 2.0);
 
-    printf ("doing vector axpy, vector size %d\n",n);
+    printf ("doing vector axpy, vector size %ld\n",n);
     start = get_time();
 
     // Start instruction and cycles count of the region of interest

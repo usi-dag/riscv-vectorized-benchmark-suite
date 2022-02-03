@@ -19,7 +19,7 @@ vector:
 	${GCC}/bin/gcc  -march=x86-64  -mavx512f -O3 -c -o src/main.o src/main.c
 	${GCC}/bin/gcc  -march=x86-64  -O3 -o bin/axpy_vector.exe src/*.o -lm
 	rm src/*.o
-	${GCC}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/axpy_vector.exe > bin/axpy_vector.dump
+#	${GCC}/bin/llvm-objdump-10  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/axpy_vector.exe > bin/axpy_vector.dump
 
 clean:
 	rm bin/*.dump; \
