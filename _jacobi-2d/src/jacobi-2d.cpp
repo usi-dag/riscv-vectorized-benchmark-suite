@@ -26,9 +26,7 @@
 #include <iomanip>
 
 
-#ifdef USE_RISCV_VECTOR
 #include "../../common/vector_defines.h"
-#endif
 
 using namespace std;
 #define DATA_TYPE double
@@ -49,7 +47,7 @@ void init_array (int n, DATA_TYPE **A, DATA_TYPE **B)
       }
 }
 
-#ifdef __AVX512F__
+
 void kernel_jacobi_2d_vector(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
 {
     _MMR_f64    xU;
@@ -102,7 +100,6 @@ void kernel_jacobi_2d_vector(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
     }
 //    FENCE();
 }
-#endif
 
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
@@ -110,9 +107,6 @@ static
 void kernel_jacobi_2d(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
 {
   int t, i, j;
-    printf("Jacobi\n");
-#ifndef __AVX512F__
-  printf("MAIN FUN\n");
   for (t = 0; t < tsteps; t++)
     {
       for (i = 1; i < n - 1; i++)
@@ -122,13 +116,16 @@ void kernel_jacobi_2d(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
        for (j = 1; j < n - 1; j++)
          A[i][j] = (0.2) * (B[i][j] + B[i][j-1] + B[i][1+j] + B[1+i][j] + B[i-1][j]);
     }
-#else
+}
+
+static void kernel_jacobi_2d_intrinsic(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B) {
+    int t, i, j;
+
     for (t = 0; t < tsteps; t++)
     {
-      kernel_jacobi_2d_vector(tsteps,n, A,B);
-      kernel_jacobi_2d_vector(tsteps,n, B,A);
+        kernel_jacobi_2d_vector(tsteps,n, A,B);
+        kernel_jacobi_2d_vector(tsteps,n, B,A);
     }
-#endif
 }
 
 
@@ -189,7 +186,6 @@ int main(int argc, char** argv)
   long long start = get_time();
 
   /* Run kernel. */
-  printf("MAIN FUN\n");
   kernel_jacobi_2d(tsteps, n, A, B);
 
   // stopping time
@@ -197,6 +193,22 @@ int main(int argc, char** argv)
   printf("time: %lf\n", elapsed_time(start, end));
 #ifdef RESULT_PRINT
   output_printfile(n,A, outfilename );
+#endif  // RESULT_PRINT
+
+    /* Initialize array(s). */
+    init_array(n,A,B);
+
+    /* Start timer. */
+    start = get_time();
+
+    /* Run kernel. */
+    kernel_jacobi_2d_intrinsic(tsteps, n, A, B);
+
+    // stopping time
+    end = get_time();
+    printf("time: %lf\n", elapsed_time(start, end));
+#ifdef RESULT_PRINT
+    output_printfile(n,A, outfilename );
 #endif  // RESULT_PRINT
 
   /* Be clean. */
