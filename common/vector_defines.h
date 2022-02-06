@@ -132,12 +132,12 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_STORE_STRIDE_f64 __builtin_epi_vstore_strided_1xf64
 //TODO #define _MM_STORE_STRIDE_f32 __builtin_epi_vstore_strided_2xf32
 
-//TODO #define _MM_MUL_f64     	__builtin_epi_vfmul_1xf64
+#define _MM_MUL_f64     	_mm512_mul_pd
 //TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
 
 //TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
 //TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
-//TODO #define _MM_ADD_f64     	__builtin_epi_vfadd_1xf64
+#define _MM_ADD_f64     	_mm512_add_pd
 //TODO #define _MM_ADD_f32     	__builtin_epi_vfadd_2xf32
 
 //TODO #define _MM_SUB_f64     	__builtin_epi_vfsub_1xf64
@@ -193,7 +193,7 @@ int loop_bound(int species_size, int length) {
 //#define _MM_MACC_f64  		__builtin_epi_vfmacc_1xf64 // AVX function composition
 #define _MM_MACC_f64      madd
 _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
-    return _mm512_add_pd(y, _mm512_mul_pd(x, a));
+    return _MM_ADD_f64(y, _MM_MUL_f64(x, a));
 }
 
 //TODO #define _MM_MACC_f32  		__builtin_epi_vfmacc_2xf32

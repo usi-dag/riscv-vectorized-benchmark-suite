@@ -49,7 +49,7 @@ void init_array (int n, DATA_TYPE **A, DATA_TYPE **B)
       }
 }
 
-#ifdef USE_RISCV_VECTOR
+#ifdef __AVX512F__
 void kernel_jacobi_2d_vector(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
 {
     _MMR_f64    xU;
@@ -65,17 +65,18 @@ void kernel_jacobi_2d_vector(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
     int size_y = n-2;
     int size_x = n-2;
 
-    unsigned long int gvl = __builtin_epi_vsetvl(size_y, __epi_e64, __epi_m1);
+//    unsigned long int gvl = __builtin_epi_vsetvl(size_y, __epi_e64, __epi_m1);
+    int limit = loop_bound(SPECIES_512, size_y);
 
-    xConstant = _MM_SET_f64(0.20,gvl);
+    xConstant = _MM_SET_f64(0.2);
 
-    for (int j=1; j<=size_x; j=j+gvl) 
+    for (int j=1; j< limit; j=j+SPECIES_512)
     {
-        gvl = __builtin_epi_vsetvl(size_y-j+1, __epi_e64, __epi_m1);
+//        gvl = __builtin_epi_vsetvl(size_y-j+1, __epi_e64, __epi_m1);
 
-        xU = _MM_LOAD_f64(&A[1][j],gvl);
-        xUtop = _MM_LOAD_f64(&A[0][j],gvl);
-        xUbottom = _MM_LOAD_f64(&A[2][j],gvl);
+        xU = _MM_LOAD_f64(&A[1][j]);
+        xUtop = _MM_LOAD_f64(&A[0][j]);
+        xUbottom = _MM_LOAD_f64(&A[2][j]);
 
         for (int i=1; i<=size_y; i++) 
         {
@@ -83,21 +84,23 @@ void kernel_jacobi_2d_vector(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
             {
                 xUtop = xU;
                 xU =  xUbottom;
-                xUbottom =  _MM_LOAD_f64(&A[i+1][j],gvl);
+                xUbottom =  _MM_LOAD_f64(&A[i+1][j]);
             }
-            izq = *(unsigned long int*)&A[i][j-1]; 
-            der = *(unsigned long int*)&A[i][j+gvl];
-            xUleft = _MM_VSLIDE1UP_f64(xU,izq,gvl);
-            xUright = _MM_VSLIDE1DOWN_f64(xU,der,gvl);
-            xUtmp = _MM_ADD_f64(xUleft,xUright,gvl);
-            xUtmp = _MM_ADD_f64(xUtmp,xUtop,gvl);
-            xUtmp = _MM_ADD_f64(xUtmp,xUbottom,gvl);
-            xUtmp = _MM_ADD_f64(xUtmp,xU,gvl);
-            xUtmp = _MM_MUL_f64(xUtmp,xConstant,gvl);
-            _MM_STORE_f64(&B[i][j], xUtmp,gvl);
+//            izq = *(unsigned long int*)&A[i][j-1];
+//            der = *(unsigned long int*)&A[i][j+gvl];
+//            xUleft = _MM_VSLIDE1UP_f64(xU,izq,gvl); // take the next SPECIES el
+//            xUright = _MM_VSLIDE1DOWN_f64(xU,der,gvl);
+            xUleft = _MM_LOAD_f64(&A[i][j-1]);
+            xUright = _MM_LOAD_f64(&A[i][j+1]);
+            xUtmp = _MM_ADD_f64(xUleft,xUright);
+            xUtmp = _MM_ADD_f64(xUtmp,xUtop);
+            xUtmp = _MM_ADD_f64(xUtmp,xUbottom);
+            xUtmp = _MM_ADD_f64(xUtmp,xU);
+            xUtmp = _MM_MUL_f64(xUtmp,xConstant);
+            _MM_STORE_f64(&B[i][j], xUtmp);
         }
     }
-    FENCE();
+//    FENCE();
 }
 #endif
 
@@ -107,7 +110,9 @@ static
 void kernel_jacobi_2d(int tsteps,int n, DATA_TYPE **A,DATA_TYPE **B)
 {
   int t, i, j;
-#ifndef USE_RISCV_VECTOR
+    printf("Jacobi\n");
+#ifndef __AVX512F__
+  printf("MAIN FUN\n");
   for (t = 0; t < tsteps; t++)
     {
       for (i = 1; i < n - 1; i++)
@@ -156,7 +161,7 @@ void output_printfile(int n,DATA_TYPE **A,  string& outfile ) {
 int main(int argc, char** argv)
 {
   if(argc!=4){
-        printf("Usage: pathfiner width N TSTEPS output_file\n");
+        printf("Usage: pathfinder width N TSTEPS output_file\n");
         exit(0);
     }
 
@@ -184,6 +189,7 @@ int main(int argc, char** argv)
   long long start = get_time();
 
   /* Run kernel. */
+  printf("MAIN FUN\n");
   kernel_jacobi_2d(tsteps, n, A, B);
 
   // stopping time
