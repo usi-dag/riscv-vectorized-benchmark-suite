@@ -235,11 +235,14 @@ void run_vector()
                     xSrc_slidedown = _MM_LOAD_i32(&dst[n-1]);
                     printf("SEG HERE?: %d\n",3);
                 } else {
-                    xSrc_slidedown = _MM_LOAD_i32(&dst[n]);
+                    int * tmp = new int [INT32_SPECIES_512];
+                    for (int i = 1; i < INT32_SPECIES_512; i++) {
+                        tmp[i] = dst[i-1];
+                    }
+                    tmp[0] = INT_MAX;
                     printf("SEG HERE?: %d\n",4);
-                    xSrc_slidedown = _MM_LSHIFT_i32(xSrc_slidedown, 1);
+                    xSrc_slidedown = _MM_LOAD_i32(&tmp[0]);
                     printf("SEG HERE?: %d\n",5);
-                    xSrc_slidedown[0] = INT_MAX;
                     printf("SEG HERE?: %d\n",6);
 
                 }
