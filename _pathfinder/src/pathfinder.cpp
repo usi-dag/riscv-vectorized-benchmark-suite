@@ -193,7 +193,7 @@ void run()
 void run_vector()
 {
     int *src,*dst, *temp;
-
+    dst = new int[cols];
     long long start = get_time();
     printf("NUMBER OF RUNS: %d\n",NUM_RUNS);
 
