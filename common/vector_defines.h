@@ -38,7 +38,7 @@ int loop_bound(int species_size, int length) {
 // INTEGER INTRINSICS
 
 //TODO #define _MM_LOAD_i64    	__builtin_epi_vload_1xi64
-#define _MM_LOAD_i32    	_mm512_load_epi32
+#define _MM_LOAD_i32    	_mm512_loadu_si512
 //TODO #define _MM_LOAD_i16        __builtin_epi_vload_4xi16
 //TODO #define _MM_LOAD_i8        __builtin_epi_vload_8xi8
 
