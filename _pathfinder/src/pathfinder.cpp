@@ -193,7 +193,7 @@ void run()
 void run_vector()
 {
     int *src,*dst, *temp;
-    dst = new int[cols];
+    dst = (int *)malloc(sizeof(int)*cols);
     long long start = get_time();
     printf("NUMBER OF RUNS: %d\n",NUM_RUNS);
 
@@ -225,43 +225,31 @@ void run_vector()
 
             for(n = 0; n < limit; n = n + INT32_SPECIES_512)
             {
-                printf("SEG HERE?: %d\n",0);
                 xNextrow = _MM_LOAD_i32(&dst[n]);
-                printf("SEG HERE?: %d\n",1);
                 xSrc = xNextrow;
                 xSrc_slideup = _MM_LOAD_i32(&dst[n+1]);
-                printf("SEG HERE?: %d\n",2);
                 if (n > 0) {
                     xSrc_slidedown = _MM_LOAD_i32(&dst[n-1]);
-                    printf("SEG HERE?: %d\n",3);
                 } else {
-                    int * tmp = new int [INT32_SPECIES_512];
-                    for (int i = 1; i < INT32_SPECIES_512; i++) {
-                        tmp[i] = dst[i-1];
-                    }
-                    tmp[0] = INT_MAX;
-                    printf("SEG HERE?: %d\n",4);
-                    xSrc_slidedown = _MM_LOAD_i32(&tmp[0]);
-                    printf("SEG HERE?: %d\n",5);
-                    printf("SEG HERE?: %d\n",6);
+//                    int * tmp = new int [INT32_SPECIES_512];
+//                    for (int i = 1; i < INT32_SPECIES_512; i++) {
+//                        tmp[i] = dst[i-1];
+//                    }
+//                    tmp[0] = INT_MAX;
+                    xSrc_slidedown = _MM_LOAD_i32(&dst[0]);
+                    xSrc_slidedown = _MM_LSHIFT_i32(xSrc_slidedown, 1);
+                    xSrc_slidedown[0] = INT_MAX;
 
                 }
 
                 xSrc = _MM_MIN_i32(xSrc,xSrc_slideup);
-                printf("SEG HERE?: %d\n",7);
                 xSrc = _MM_MIN_i32(xSrc,xSrc_slidedown);
-                printf("SEG HERE?: %d\n",8);
                 xNextrow = _MM_LOAD_i32(&wall[(t+1)*cols + n]);
-                printf("SEG HERE?: %d\n",9);
                 xNextrow = _MM_ADD_i32(xNextrow,xSrc);
-                printf("SEG HERE?: %d\n",10);
-                printf("n: %d\ncols: %d\n", n, cols);
                 _MM_STORE_i32(&dst[n],xNextrow);
-                printf("SEG HERE?: %d\n",11);
 //                FENCE();
             }
 
-            printf("SEG HERE?: %d\n",12);
             for (; n < cols; n++) {
                 int min = src[n];
                 if (n > 0)
@@ -271,7 +259,6 @@ void run_vector()
 
                 dst[n] = wall[(t+1)*cols + n]+min;
             }
-            printf("SEG HERE?: %d\n",13);
         }
 
 //        FENCE();
