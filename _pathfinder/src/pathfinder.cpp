@@ -252,6 +252,7 @@ void run_vector()
                 printf("SEG HERE?: %d\n",9);
                 xNextrow = _MM_ADD_i32(xNextrow,xSrc);
                 printf("SEG HERE?: %d\n",10);
+                printf("n: %d\ncols: %d\n", n, cols);
                 _MM_STORE_i32(&dst[n],xNextrow);
                 printf("SEG HERE?: %d\n",11);
 //                FENCE();
