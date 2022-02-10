@@ -49,7 +49,7 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_LOAD_STRIDE_i32 __builtin_epi_vload_strided_2xi32
 
 //TODO #define _MM_STORE_i64   	__builtin_epi_vstore_1xi64
-#define _MM_STORE_i32   	_mm512_store_si512
+#define _MM_STORE_i32   	_mm512_store_epi32
 //TODO #define _MM_STORE_i16       __builtin_epi_vstore_4xi16
 //TODO #define _MM_STORE_i8       __builtin_epi_vstore_8xi8
 
