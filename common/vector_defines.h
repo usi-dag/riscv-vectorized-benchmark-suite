@@ -5,6 +5,11 @@
 
 #define MUSTINLINE __attribute__((always_inline))
 
+#define INT32_SPECIES_512 16
+#define INT32_SPECIES_256 8
+#define INT32_SPECIES_128 4
+#define INT32_SPECIES_64 2
+
 #define SPECIES_512 8 // species for double
 #define SPECIES_256 4 // species for double
 #define SPECIES_128 2 // species for double
@@ -26,14 +31,14 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MMR_4xf64			__epi_4xf32
 
 //TODO #define _MMR_i64        	__epi_1xi64
-//TODO #define _MMR_i32        	__epi_2xi32
+#define _MMR_i32        	__m512i
 
 
 //---------------------------------------------------------------------------
 // INTEGER INTRINSICS
 
 //TODO #define _MM_LOAD_i64    	__builtin_epi_vload_1xi64
-//TODO #define _MM_LOAD_i32    	__builtin_epi_vload_2xi32
+#define _MM_LOAD_i32    	_mm512_loadu_epi32
 //TODO #define _MM_LOAD_i16        __builtin_epi_vload_4xi16
 //TODO #define _MM_LOAD_i8        __builtin_epi_vload_8xi8
 
@@ -44,7 +49,7 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_LOAD_STRIDE_i32 __builtin_epi_vload_strided_2xi32
 
 //TODO #define _MM_STORE_i64   	__builtin_epi_vstore_1xi64
-//TODO #define _MM_STORE_i32   	__builtin_epi_vstore_2xi32
+#define _MM_STORE_i32   	_mm512_store_epi32
 //TODO #define _MM_STORE_i16       __builtin_epi_vstore_4xi16
 //TODO #define _MM_STORE_i8       __builtin_epi_vstore_8xi8
 
@@ -55,7 +60,7 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_STORE_STRIDE_i32 __builtin_epi_vstore_strided_2xi32
 
 //TODO #define _MM_ADD_i64     	__builtin_epi_vadd_1xi64
-//TODO #define _MM_ADD_i32     	__builtin_epi_vadd_2xi32
+#define _MM_ADD_i32     	_mm512_add_epi32
 
 //TODO #define _MM_SUB_i64			  __builtin_epi_vsub_1xi64
 //TODO #define _MM_SUB_i32			  __builtin_epi_vsub_2xi32
@@ -78,7 +83,7 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_SET_i32     	__builtin_epi_vbroadcast_2xi32
 
 //TODO #define _MM_MIN_i64         __builtin_epi_vmin_1xi64
-//TODO #define _MM_MIN_i32         __builtin_epi_vmin_2xi32
+#define _MM_MIN_i32         _mm512_min_epi32
 
 //TODO #define _MM_MAX_i64         __builtin_epi_vmax_1xi64
 //TODO #define _MM_MAX_i32         __builtin_epi_vmax_2xi32
@@ -108,6 +113,8 @@ int loop_bound(int species_size, int length) {
 
 //TODO #define _MM_MERGE_i64  		__builtin_epi_vmerge_1xi64
 //TODO #define _MM_MERGE_i32  		__builtin_epi_vmerge_2xi32
+
+#define _MM_LSHIFT_i32 _mm512_slli_epi32
 
 //---------------------------------------------------------------------------
 // FLOATING POINT INTRINSICS

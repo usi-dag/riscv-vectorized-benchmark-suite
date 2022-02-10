@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <climits>
 
 using namespace std;
 
@@ -17,9 +18,7 @@ using namespace std;
 * Barcelona Supercomputing Center (2020)
 *************************************************************************/
 
-#ifdef USE_RISCV_VECTOR
 #include "../../common/vector_defines.h"
-#endif
 
 /************************************************************************/
 
@@ -130,7 +129,7 @@ long long end_0 = get_time();
 printf("TIME TO INIT DATA: %f\n", elapsed_time(start_0, end_0));
     //unsigned long long cycles;
 
-#ifndef USE_RISCV_VECTOR
+#ifndef __AVX512F__
     run();
 #else
     run_vector();
@@ -139,7 +138,7 @@ printf("TIME TO INIT DATA: %f\n", elapsed_time(start_0, end_0));
 return EXIT_SUCCESS;
 }
 
-#ifndef USE_RISCV_VECTOR
+#ifndef __AVX512F__
 
 void run()
 {
@@ -180,7 +179,7 @@ void run()
 
 #ifdef RESULT_PRINT
 
-    output_printfile(dst, outfilename );
+//    output_printfile(dst, outfilename );
 
 #endif  // RESULT_PRINT
     free(dst);
@@ -188,66 +187,88 @@ void run()
     free(src);
 }
 
-#else // USE_RISCV_VECTOR
+#else // __AVX512F__
 
 void run_vector()
 {
-    int *dst;
+    int *src,*dst, *temp;
 
     long long start = get_time();
     printf("NUMBER OF RUNS: %d\n",NUM_RUNS);
 
+    int limit = loop_bound(INT32_SPECIES_512, cols-1);
+
     for (int j=0; j<NUM_RUNS; j++) {
+        src = new int[cols];
         for (int x = 0; x < cols; x++){
             result[x] = wall[x];
         }
         dst = result;
 
-        unsigned long int gvl = __builtin_epi_vsetvl(cols, __epi_e32, __epi_m1);
 
         _MMR_i32    xSrc_slideup;
         _MMR_i32    xSrc_slidedown;
         _MMR_i32    xSrc;
         _MMR_i32    xNextrow; 
 
-        int aux,aux2;
 
         for (int t = 0; t < rows-1; t++) 
         {
-            aux = dst[0] ;
-            for(int n = 0; n < cols; n = n + gvl)
+            int n;
+
+            temp = src;
+            src = dst;
+            dst = temp;
+
+            for(n = 0; n < cols; n = n + INT32_SPECIES_512)
             {
-                gvl = __builtin_epi_vsetvl(cols-n, __epi_e32, __epi_m1);
-                xNextrow = _MM_LOAD_i32(&dst[n],gvl);
+                xNextrow = _MM_LOAD_i32(&dst[n]);
                 xSrc = xNextrow;
-                aux2 = (n+gvl >= cols) ?  dst[n+gvl-1] : dst[n+gvl];
-                xSrc_slideup = _MM_VSLIDE1UP_i32(xSrc,aux,gvl);
-                xSrc_slidedown = _MM_VSLIDE1DOWN_i32(xSrc,aux2,gvl);
-                xSrc = _MM_MIN_i32(xSrc,xSrc_slideup,gvl);
-                xSrc = _MM_MIN_i32(xSrc,xSrc_slidedown,gvl);
-                xNextrow = _MM_LOAD_i32(&wall[(t+1)*cols + n],gvl);
-                xNextrow = _MM_ADD_i32(xNextrow,xSrc,gvl);
-                aux = dst[n+gvl-1];
-                _MM_STORE_i32(&dst[n],xNextrow,gvl);
-                FENCE();
+                xSrc_slideup = _MM_LOAD_i32(&dst[n+1]);
+                if (n > 0) {
+                    xSrc_slidedown = _MM_LOAD_i32(&dst[n-1]);
+                } else {
+                    xSrc_slidedown = _MM_LOAD_i32(&dst[n]);
+                    xSrc_slidedown = _MM_LSHIFT_i32(xSrc_slidedown, 1);
+                    xSrc_slidedown[0] = INT_MAX;
+
+                }
+
+                xSrc = _MM_MIN_i32(xSrc,xSrc_slideup);
+                xSrc = _MM_MIN_i32(xSrc,xSrc_slidedown);
+                xNextrow = _MM_LOAD_i32(&wall[(t+1)*cols + n]);
+                xNextrow = _MM_ADD_i32(xNextrow,xSrc);
+                _MM_STORE_i32(&dst[n],xNextrow);
+//                FENCE();
+            }
+
+            for (; n < cols; n++) {
+                int min = src[n];
+                if (n > 0)
+                    min = MIN(min, src[n-1]);
+                if (n < cols-1)
+                    min = MIN(min, src[n+1]);
+
+                dst[n] = wall[(t+1)*cols + n]+min;
             }
         }
 
-        FENCE();
+//        FENCE();
     }
     long long end = get_time();
     printf("TIME TO FIND THE SMALLEST PATH: %f\n", elapsed_time(start, end));
 
 #ifdef RESULT_PRINT
 
-    output_printfile(dst, outfilename );
+//    output_printfile(dst, outfilename );
 
 #endif // RESULT_PRINT
 
     free(wall);
     free(dst);
+    free(src);
 }
-#endif // USE_RISCV_VECTOR
+#endif // __AVX512F__
 
 /*
 void init_data(int *data,  string&  inputfile ) {
