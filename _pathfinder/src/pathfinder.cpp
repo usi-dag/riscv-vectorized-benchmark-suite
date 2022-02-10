@@ -18,8 +18,9 @@ using namespace std;
 * Barcelona Supercomputing Center (2020)
 *************************************************************************/
 
+#ifdef VECTORIZE
 #include "../../common/vector_defines.h"
-
+#endif
 /************************************************************************/
 
 //Enable RESULT_PRINT in order to see the result vector, for instruction count it should be disable
@@ -129,7 +130,7 @@ long long end_0 = get_time();
 printf("TIME TO INIT DATA: %f\n", elapsed_time(start_0, end_0));
     //unsigned long long cycles;
 
-#ifndef __AVX512F__
+#ifndef VECTORIZE
     run();
 #else
     run_vector();
@@ -138,7 +139,7 @@ printf("TIME TO INIT DATA: %f\n", elapsed_time(start_0, end_0));
 return EXIT_SUCCESS;
 }
 
-#ifndef __AVX512F__
+#ifndef VECTORIZE
 
 void run()
 {
@@ -187,7 +188,7 @@ void run()
     free(src);
 }
 
-#else // __AVX512F__
+#else // VECTORIZE
 
 void run_vector()
 {
@@ -268,7 +269,7 @@ void run_vector()
     free(dst);
     free(src);
 }
-#endif // __AVX512F__
+#endif // VECTORIZE
 
 /*
 void init_data(int *data,  string&  inputfile ) {
