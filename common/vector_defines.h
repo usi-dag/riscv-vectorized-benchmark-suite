@@ -1,3 +1,6 @@
+#ifndef VECTOR_DEFINITION
+#define VECTOR_DEFINITION
+
 #include <math.h>
 #include <immintrin.h>
 
@@ -16,7 +19,7 @@
 #define SPECIES_64 1 // species for double
 //---------------------------------------------------------------------------
 // UTILITY FUNCTION
-int loop_bound(int species_size, int length) {
+inline int loop_bound(int species_size, int length) {
     return floor(abs(length)/species_size) * species_size;
 }
 
@@ -63,7 +66,7 @@ int loop_bound(int species_size, int length) {
 #define _MM_ADD_i32     	_mm512_add_epi32
 
 //TODO #define _MM_SUB_i64			  __builtin_epi_vsub_1xi64
-//TODO #define _MM_SUB_i32			  __builtin_epi_vsub_2xi32
+#define _MM_SUB_i32			  _mm512_add_epi32
 
 //TODO #define _MM_ADD_i64_MASK  __builtin_epi_vadd_1xi64_mask
 //TODO #define _MM_ADD_i32_MASK  __builtin_epi_vadd_2xi32_mask
@@ -80,7 +83,7 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_REM_i32       __builtin_epi_vrem_2xi32
 
 //TODO #define _MM_SET_i64     	__builtin_epi_vbroadcast_1xi64
-//TODO #define _MM_SET_i32     	__builtin_epi_vbroadcast_2xi32
+#define _MM_SET_i32     	_mm512_set1_epi32
 
 //TODO #define _MM_MIN_i64         __builtin_epi_vmin_1xi64
 #define _MM_MIN_i32         _mm512_min_epi32
@@ -107,12 +110,14 @@ int loop_bound(int species_size, int length) {
 //TODO #define _MM_NOT_i32(x)     	_MM_XOR_i32((x),(x), gvl)
 
 //TODO #define _MM_REDSUM_i64   	__builtin_epi_vredsum_1xi64
-//TODO #define _MM_REDSUM_i32   	__builtin_epi_vredsum_2xi32
+#define _MM_REDSUM_i32   	_mm512_reduce_add_epi32
 //TODO #define _MM_REDSUM_i16      __builtin_epi_vredsum_4xi16
 //TODO #define _MM_REDSUM_i8      __builtin_epi_vredsum_8xi8
 
 //TODO #define _MM_MERGE_i64  		__builtin_epi_vmerge_1xi64
 //TODO #define _MM_MERGE_i32  		__builtin_epi_vmerge_2xi32
+
+#define _MM_ABS_i32 _mm512_abs_epi32
 
 #define _MM_LSHIFT_i32 _mm512_slli_epi32
 
@@ -199,7 +204,7 @@ int loop_bound(int species_size, int length) {
 
 //#define _MM_MACC_f64  		__builtin_epi_vfmacc_1xf64 // AVX function composition
 #define _MM_MACC_f64      madd
-_MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
+inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
     return _MM_ADD_f64(y, _MM_MUL_f64(x, a));
 }
 
@@ -360,3 +365,4 @@ _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 
 //---------------------------------------------------------------------------
 
+#endif // VECTOR_DEFINITION

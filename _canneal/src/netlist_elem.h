@@ -49,7 +49,8 @@ public:
 	netlist_elem();
 	routing_cost_t routing_cost_given_loc(location_t loc);
 #ifdef USE_RISCV_VECTOR
-	routing_cost_t swap_cost_vector(_MMR_i32 xAFanin_loc ,_MMR_i32 xBFanin_loc ,int a_fan_size);
+//	routing_cost_t swap_cost_vector(_MMR_i32 xAFanin_loc ,_MMR_i32 xBFanin_loc ,int a_fan_size);
+  routing_cost_t swap_cost_vector(location_t* old_loc, location_t* new_loc);
 #else // !USE_RISCV_VECTOR
 	routing_cost_t swap_cost(location_t* old_loc, location_t* new_loc);
 #endif //USE_RISCV_VECTOR
@@ -60,7 +61,10 @@ public:
 	std::vector<netlist_elem*> fanout;
 	AtomicPtr<location_t> present_loc;
 	//std::deque<location_t *> fan_locs;
-	std::vector<unsigned long *> fan_locs;
+    std::vector<unsigned long *> fanin_locs_x;
+    std::vector<unsigned long *> fanin_locs_y;
+    std::vector<unsigned long *> fanout_locs_x;
+    std::vector<unsigned long *> fanout_locs_y;
 protected:
 };
 

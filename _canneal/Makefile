@@ -5,20 +5,20 @@ start:
 
 serial:
 	for entry in src/*.cpp ; do \
-		${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -O2 -fno-vectorize -c -o $$entry.o  $$entry ; \
+		${GCC}/bin/g++ -march=native -O3 -fno-tree-vectorize -c -o $$entry.o  $$entry ; \
 	done
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -O2 -fno-vectorize -o bin/canneal_serial.exe src/*.cpp.o -lm ; \
-	${LLVM}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c -ds  bin/canneal_serial.exe > bin/canneal_serial.dump ; \
+	${GCC}/bin/g++ -march=native -O3 -fno-tree-vectorize -o bin/canneal_serial.exe src/*.cpp.o -lm ; \
+#	${GCC}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c -ds  bin/canneal_serial.exe > bin/canneal_serial.dump ; \
 	rm src/*.o ; \
 
 vector:
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize -c -o src/annealer_thread.o src/annealer_thread.cpp; \
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize -c -o src/main.o src/main.cpp; \
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize -c -o src/netlist.o src/netlist.cpp; \
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize -c -o src/netlist_elem.o src/netlist_elem.cpp; \
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize -c -o src/rng.o src/rng.cpp; \
-	${LLVM}/bin/clang++ --target=riscv64-unknown-elf -march=rv64g -mepi -DUSE_RISCV_VECTOR -O2 -fno-vectorize  -o bin/canneal_vector.exe src/*.o -lm; \
-	${LLVM}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/canneal_vector.exe > bin/canneal_vector.dump ; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize -c -o src/annealer_thread.o src/annealer_thread.cpp; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize -c -o src/main.o src/main.cpp; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize -c -o src/netlist.o src/netlist.cpp; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize -c -o src/netlist_elem.o src/netlist_elem.cpp; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize -c -o src/rng.o src/rng.cpp; \
+	${GCC}/bin/g++ -march=native -mavx512f -DUSE_RISCV_VECTOR -O3 -fno-tree-vectorize  -o bin/canneal_vector.exe src/*.o -lm; \
+#	${GCC}/bin/llvm-objdump  --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/canneal_vector.exe > bin/canneal_vector.dump ; \
 	rm src/*.o;
 
 clean:

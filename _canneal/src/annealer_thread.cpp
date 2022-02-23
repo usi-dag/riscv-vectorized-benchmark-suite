@@ -68,9 +68,11 @@ void annealer_thread::Run()
     int temp_steps_completed=0;
 
     #ifdef USE_RISCV_VECTOR
-    unsigned long int gvl   = __builtin_epi_vsetvlmax(__epi_e32, __epi_m1);
-    mask = (int*)malloc(gvl*sizeof(int));
-    for(int i=0 ; i<=gvl ; i=i+2) { mask[i]=1;  mask[i+1]=0; }
+//    unsigned long int gvl   = __builtin_epi_vsetvlmax(__epi_e32, __epi_m1);
+//    mask = (int*)malloc(gvl*sizeof(int));
+//    for(int i=0 ; i<=gvl ; i=i+2) { mask[i]=1;  mask[i+1]=0; }
+    mask = (int*)malloc(INT32_SPECIES_512*sizeof(int));
+    for(int i =0; i<=INT32_SPECIES_512; i=i+2) {mask[i]=1; mask[i+1]=0;}
     #endif // !USE_RISCV_VECTOR
 
     while(keep_going(temp_steps_completed, accepted_good_moves, accepted_bad_moves)){
@@ -137,36 +139,43 @@ annealer_thread::move_decision_t annealer_thread::accept_move(routing_cost_t del
 #ifdef USE_RISCV_VECTOR
 routing_cost_t annealer_thread::calculate_delta_routing_cost_vector(netlist_elem* a, netlist_elem* b/*, __epi_2xi1  xMask2*/)
 {
+
+//    int a_fan_size = a->fanin.size() + a->fanout.size();
+//    int b_fan_size = b->fanin.size() + b->fanout.size();
+//    location_t* a_loc = a->present_loc.Get();
+//    location_t* b_loc = b->present_loc.Get();
+//
+//
+//    if((a_fan_size > 0) | (b_fan_size > 0))
+//    {
+//        int max_vl = (a_fan_size > b_fan_size) ? a_fan_size*2 : b_fan_size*2;
+//        unsigned long int gvl   = __builtin_epi_vsetvl(max_vl,__epi_e32, __epi_m1);
+//        // Get the MVL allowed by the hardware
+//        //unsigned long int gvl   = __builtin_epi_vsetvlmax(__epi_e32, __epi_m1);
+//        //Create a mask with size of MVL
+//        //int* mask;
+//        //mask = (int*)malloc(gvl*sizeof(int));
+//        //for(int i=0 ; i<=gvl ; i=i+2) { mask[i]=1;  mask[i+1]=0; }
+//        __epi_2xi1  xMask = __builtin_epi_cast_2xi1_2xi32(_MM_LOAD_i32(mask,gvl));
+//
+//        _MMR_i32 xAFanin_loc     = _MM_MERGE_i32(_MM_SET_i32(a_loc->y,gvl),_MM_SET_i32(a_loc->x,gvl),xMask,gvl);
+//        _MMR_i32 xBFanin_loc     = _MM_MERGE_i32(_MM_SET_i32(b_loc->y,gvl),_MM_SET_i32(b_loc->x,gvl),xMask,gvl);
+//
+//        if(a_fan_size > 0) {
+//            delta_cost = a->swap_cost_vector(xAFanin_loc,xBFanin_loc,a_fan_size);
+//        }
+//        if(b_fan_size > 0) {
+//            delta_cost = delta_cost + b->swap_cost_vector(xBFanin_loc,xAFanin_loc,b_fan_size);
+//        }
+//    }
+
     routing_cost_t delta_cost=0.0;
 
-    int a_fan_size = a->fanin.size() + a->fanout.size();
-    int b_fan_size = b->fanin.size() + b->fanout.size();
     location_t* a_loc = a->present_loc.Get();
     location_t* b_loc = b->present_loc.Get();
 
-
-    if((a_fan_size > 0) | (b_fan_size > 0))
-    {
-        int max_vl = (a_fan_size > b_fan_size) ? a_fan_size*2 : b_fan_size*2;
-        unsigned long int gvl   = __builtin_epi_vsetvl(max_vl,__epi_e32, __epi_m1);
-        // Get the MVL allowed by the hardware
-        //unsigned long int gvl   = __builtin_epi_vsetvlmax(__epi_e32, __epi_m1);
-        //Create a mask with size of MVL
-        //int* mask;
-        //mask = (int*)malloc(gvl*sizeof(int));
-        //for(int i=0 ; i<=gvl ; i=i+2) { mask[i]=1;  mask[i+1]=0; }
-        __epi_2xi1  xMask = __builtin_epi_cast_2xi1_2xi32(_MM_LOAD_i32(mask,gvl));
-
-        _MMR_i32 xAFanin_loc     = _MM_MERGE_i32(_MM_SET_i32(a_loc->y,gvl),_MM_SET_i32(a_loc->x,gvl),xMask,gvl);
-        _MMR_i32 xBFanin_loc     = _MM_MERGE_i32(_MM_SET_i32(b_loc->y,gvl),_MM_SET_i32(b_loc->x,gvl),xMask,gvl);
-
-        if(a_fan_size > 0) {
-            delta_cost = a->swap_cost_vector(xAFanin_loc,xBFanin_loc,a_fan_size);
-        }
-        if(b_fan_size > 0) {
-            delta_cost = delta_cost + b->swap_cost_vector(xBFanin_loc,xAFanin_loc,b_fan_size);
-        }
-    }
+    delta_cost = a->swap_cost_vector(a_loc, b_loc);
+    delta_cost = delta_cost + b->swap_cost_vector(b_loc, a_loc);
 
     return delta_cost;
 }
