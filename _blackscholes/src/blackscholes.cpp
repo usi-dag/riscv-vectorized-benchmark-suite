@@ -104,8 +104,7 @@ int nThreads;
 
 #ifdef USE_RISCV_VECTOR
 
-_MMR_f32 CNDF_SIMD  (_MMR_f32 xInput ,unsigned long int gvl) 
-{
+_MMR_f32 CNDF_SIMD  (_MMR_f32 xInput) {
 
   _MMR_f32 xNPrimeofX;
   _MMR_f32 xK2;
@@ -123,45 +122,102 @@ _MMR_f32 CNDF_SIMD  (_MMR_f32 xInput ,unsigned long int gvl)
 
   _MMR_f32 expValues;
 
-  _MMR_f32 xOne   = _MM_SET_f32(1.0,gvl);
+  _MMR_f32 xOne   = _MM_SET_f32(1.0);
 
-  xVLocal_2   = _MM_SET_f32(0.0,gvl);
-  xMask       = _MM_VFLT_f32(xInput,xVLocal_2,gvl);  //_MM_VFLT_f32(src2,src1)
-  xInput      = _MM_VFSGNJX_f32(xInput,xInput,gvl); //_MM_VFSGNJX_f32(src2,src1)
+   xVLocal_2  = _MM_SET_f32(0.0);
+  xMask       = _MM_VFLT_f32(xMask, xInput, xVLocal_2);  //_MM_VFLT_f32(src2,src1)
+  xInput      = _MM_VFSGNJX_f32(xInput); //_MM_VFSGNJX_f32(src2,src1) // TODO right absolute value?
 
-  expValues   = _MM_MUL_f32(xInput, xInput,gvl);
-  expValues   = _MM_MUL_f32(expValues, _MM_SET_f32(-0.5,gvl),gvl);
+  expValues   = _MM_MUL_f32(xInput, xInput);
+  expValues   = _MM_MUL_f32(expValues, _MM_SET_f32(-0.5));
 
-  xNPrimeofX = _MM_EXP_f32(expValues ,gvl);
-  xNPrimeofX = _MM_MUL_f32(xNPrimeofX, _MM_SET_f32(inv_sqrt_2xPI,gvl),gvl);
+  xNPrimeofX = _MM_EXP_f32(expValues);
+  xNPrimeofX = _MM_MUL_f32(xNPrimeofX, _MM_SET_f32(inv_sqrt_2xPI));
 
-  xK2   = _MM_MADD_f32(_MM_SET_f32(0.2316419,gvl),xInput,xOne,gvl);
+  xK2   = _MM_MADD_f32(_MM_SET_f32(0.2316419),xInput,xOne);
 
-  xK2   = _MM_DIV_f32(xOne,xK2,gvl);
-  xK2_2 = _MM_MUL_f32(xK2, xK2,gvl);
-  xK2_3 = _MM_MUL_f32(xK2_2, xK2,gvl);
-  xK2_4 = _MM_MUL_f32(xK2_3, xK2,gvl);
-  xK2_5 = _MM_MUL_f32(xK2_4, xK2,gvl);
+  xK2   = _MM_DIV_f32(xOne,xK2);
+  xK2_2 = _MM_MUL_f32(xK2, xK2);
+  xK2_3 = _MM_MUL_f32(xK2_2, xK2);
+  xK2_4 = _MM_MUL_f32(xK2_3, xK2);
+  xK2_5 = _MM_MUL_f32(xK2_4, xK2);
 
-  xLocal_1 = _MM_MUL_f32(xK2, _MM_SET_f32(0.319381530,gvl),gvl);
-  xLocal_2 = _MM_MUL_f32(xK2_2, _MM_SET_f32(-0.356563782,gvl),gvl);
-  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_3,_MM_SET_f32(1.781477937,gvl),gvl);
-  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_4,_MM_SET_f32(-1.821255978,gvl),gvl);
-  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_5,_MM_SET_f32(1.330274429,gvl),gvl);
+  xLocal_1 = _MM_MUL_f32(xK2, _MM_SET_f32(0.319381530));
+  xLocal_2 = _MM_MUL_f32(xK2_2, _MM_SET_f32(-0.356563782));
+  xLocal_3 = _MM_MUL_f32(xK2_3, _MM_SET_f32(1.781477937f));
+  xLocal_2 = _MM_ADD_f32(xLocal_2, xLocal_3);
+  xLocal_3 = _MM_MUL_f32(xK2_4,  _MM_SET_f32(-1.821255978f));
+  xLocal_2 = _MM_ADD_f32(xLocal_2,  xLocal_3);
+  xLocal_3 = _MM_MUL_f32(xK2_5, _MM_SET_f32(1.330274429f));
+  xLocal_2 = _MM_ADD_f32(xLocal_2, xLocal_3);
 
-  xLocal_1 = _MM_ADD_f32(xLocal_2, xLocal_1,gvl);
 
-  xLocal   = _MM_MUL_f32(xLocal_1, xNPrimeofX,gvl);
-  xLocal   = _MM_SUB_f32(xOne,xLocal,gvl);
+  xLocal_1 = _MM_ADD_f32(xLocal_2, xLocal_1);
 
-  xLocal   = _MM_SUB_f32_MASK(xLocal,xOne,xLocal,xMask,gvl); //sub(vs2,vs1)
+  xLocal   = _MM_MUL_f32(xLocal_1, xNPrimeofX);
+  xLocal   = _MM_SUB_f32(xOne,xLocal);
+
+  xLocal   = _MM_SUB_f32_MASK(xLocal,xMask,xOne,xLocal); //sub(vs2,vs1)
   return xLocal;
+
 }
+//_MMR_f32 CNDF_SIMD  (_MMR_f32 xInput ,unsigned long int gvl)
+//{
+//
+//  _MMR_f32 xNPrimeofX;
+//  _MMR_f32 xK2;
+//  _MMR_f32 xK2_2;
+//  _MMR_f32 xK2_3;
+//  _MMR_f32 xK2_4;
+//  _MMR_f32 xK2_5;
+//  _MMR_f32 xLocal;
+//  _MMR_f32 xLocal_1;
+//  _MMR_f32 xLocal_2;
+//  _MMR_f32 xLocal_3;
+//
+//  _MMR_f32 xVLocal_2;
+//  _MMR_MASK_i32 xMask;
+//
+//  _MMR_f32 expValues;
+//
+//  _MMR_f32 xOne   = _MM_SET_f32(1.0,gvl);
+//
+//  xVLocal_2   = _MM_SET_f32(0.0,gvl);
+//  xMask       = _MM_VFLT_f32(xInput,xVLocal_2,gvl);  //_MM_VFLT_f32(src2,src1)
+//  xInput      = _MM_VFSGNJX_f32(xInput,xInput,gvl); //_MM_VFSGNJX_f32(src2,src1)
+//
+//  expValues   = _MM_MUL_f32(xInput, xInput,gvl);
+//  expValues   = _MM_MUL_f32(expValues, _MM_SET_f32(-0.5,gvl),gvl);
+//
+//  xNPrimeofX = _MM_EXP_f32(expValues ,gvl);
+//  xNPrimeofX = _MM_MUL_f32(xNPrimeofX, _MM_SET_f32(inv_sqrt_2xPI,gvl),gvl);
+//
+//  xK2   = _MM_MADD_f32(_MM_SET_f32(0.2316419,gvl),xInput,xOne,gvl);
+//
+//  xK2   = _MM_DIV_f32(xOne,xK2,gvl);
+//  xK2_2 = _MM_MUL_f32(xK2, xK2,gvl);
+//  xK2_3 = _MM_MUL_f32(xK2_2, xK2,gvl);
+//  xK2_4 = _MM_MUL_f32(xK2_3, xK2,gvl);
+//  xK2_5 = _MM_MUL_f32(xK2_4, xK2,gvl);
+//
+//  xLocal_1 = _MM_MUL_f32(xK2, _MM_SET_f32(0.319381530,gvl),gvl);
+//  xLocal_2 = _MM_MUL_f32(xK2_2, _MM_SET_f32(-0.356563782,gvl),gvl);
+//  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_3,_MM_SET_f32(1.781477937,gvl),gvl);
+//  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_4,_MM_SET_f32(-1.821255978,gvl),gvl);
+//  xLocal_2   = _MM_MACC_f32(xLocal_2,xK2_5,_MM_SET_f32(1.330274429,gvl),gvl);
+//
+//  xLocal_1 = _MM_ADD_f32(xLocal_2, xLocal_1,gvl);
+//
+//  xLocal   = _MM_MUL_f32(xLocal_1, xNPrimeofX,gvl);
+//  xLocal   = _MM_SUB_f32(xOne,xLocal,gvl);
+//
+//  xLocal   = _MM_SUB_f32_MASK(xLocal,xOne,xLocal,xMask,gvl); //sub(vs2,vs1)
+//  return xLocal;
+//}
 
-
-void BlkSchlsEqEuroNoDiv_vector (fptype * OptionPrice, int numOptions, fptype * sptprice,
+void BlkSchlsEqEuroNoDiv_vector (fptype * OptionPrice, fptype * sptprice,
                           fptype * strike, fptype * rate, fptype * volatility,
-                          fptype * time, int * otype/*,long int *  otype_d*/, float timet ,unsigned long int gvl)
+                          fptype * time, int * otype/*,long int *  otype_d*/, float timet, int i)
 {
     // local private working variables for the calculation
     _MMR_f32 xStockPrice;
@@ -187,47 +243,117 @@ void BlkSchlsEqEuroNoDiv_vector (fptype * OptionPrice, int numOptions, fptype * 
     _MMR_f32 xOptionPrice2;
     _MMR_f32 xfXd1;
     _MMR_f32 xfXd2;
-    
-    xStrikePrice = _MM_LOAD_f32(strike,gvl);
-    xStockPrice = _MM_LOAD_f32(sptprice,gvl);
-    xStrikePrice = _MM_DIV_f32(xStockPrice,xStrikePrice,gvl);
-    xLogTerm = _MM_LOG_f32(xStrikePrice,gvl);
-    xRiskFreeRate = _MM_LOAD_f32(rate,gvl);
-    xVolatility = _MM_LOAD_f32(volatility,gvl);
-    xTime = _MM_LOAD_f32(time,gvl);
-    xSqrtTime = _MM_SQRT_f32(xTime,gvl);
-    xRatexTime = _MM_MUL_f32(xRiskFreeRate, xTime,gvl);
-    xRatexTime = _MM_VFSGNJN_f32(xRatexTime, xRatexTime,gvl);
 
-    xFutureValueX = _MM_EXP_f32(xRatexTime,gvl);
-    xPowerTerm = _MM_MUL_f32(xVolatility, xVolatility,gvl);
-    xPowerTerm = _MM_MUL_f32(xPowerTerm, _MM_SET_f32(0.5,gvl),gvl);
-    xD1 = _MM_ADD_f32( xRiskFreeRate , xPowerTerm,gvl);
-    
-    xD1   = _MM_MADD_f32(xD1,xTime,xLogTerm,gvl);
+    xStrikePrice = _MM_LOAD_f32(strike);
+    xStockPrice = _MM_LOAD_f32(sptprice);
+    xStrikePrice = _MM_DIV_f32(xStockPrice,xStrikePrice);
+    // xLogTerm = _MM_LOG_f32(xStrikePrice); // todo does not work
+    xRiskFreeRate = _MM_LOAD_f32(rate);
+    xVolatility = _MM_LOAD_f32(volatility);
+    xTime = _MM_LOAD_f32(time);
+    xSqrtTime = _MM_SQRT_f32(xTime);
+    xRatexTime = _MM_MUL_f32(xRiskFreeRate, xTime);
+    xRatexTime = _MM_VFSGNJN_f32(_MM_SET_f32(1), xRatexTime, xRatexTime);
 
-    xDen = _MM_MUL_f32(xVolatility, xSqrtTime,gvl);
-    xD1 = _MM_DIV_f32(xD1,xDen,gvl);
-    xD2 = _MM_SUB_f32(xD1,xDen ,gvl);
+    xFutureValueX = _MM_EXP_f32(xRatexTime);
+    xPowerTerm = _MM_MUL_f32(xVolatility, xVolatility);
+    xPowerTerm = _MM_MUL_f32(xPowerTerm, _MM_SET_f32(0.5));
+    xD1 = _MM_ADD_f32( xRiskFreeRate , xPowerTerm);
 
-    xfXd1 = CNDF_SIMD( xD1 ,gvl);
-    xfXd2 = CNDF_SIMD( xD2 ,gvl);
+    xD1   = _MM_MADD_f32(xD1,xTime,xLogTerm);
 
-    xStrikePrice = _MM_LOAD_f32(strike,gvl);
-    xFutureValueX = _MM_MUL_f32(xFutureValueX, xStrikePrice,gvl);
+    xDen = _MM_MUL_f32(xVolatility, xSqrtTime);
+    xD1 = _MM_DIV_f32(xD1,xDen);
+    xD2 = _MM_SUB_f32(xD1,xDen);
 
-    xOtype    = _MM_LOAD_i32(otype,gvl);
-    xZero     = _MM_SET_i32(0,gvl);
-    xMask     = _MM_VMSEQ_i32(xZero,xOtype,gvl);
-    xfXd1   = _MM_MERGE_f32(_MM_SUB_f32(_MM_SET_f32(1.0,gvl),xfXd1,gvl),xfXd1, xMask,gvl);
-    xStockPrice = _MM_LOAD_f32(sptprice,gvl);
-    xOptionPrice1 = _MM_MUL_f32(xStockPrice, xfXd1,gvl);
-    xfXd2   = _MM_MERGE_f32(_MM_SUB_f32(_MM_SET_f32(1.0,gvl),xfXd2,gvl),xfXd2, xMask,gvl);
-    xOptionPrice2 = _MM_MUL_f32(xFutureValueX, xfXd2,gvl);
-    xOptionPrice = _MM_SUB_f32(xOptionPrice2,xOptionPrice1,gvl);
-    xOptionPrice = _MM_VFSGNJX_f32(xOptionPrice,xOptionPrice,gvl);
-    _MM_STORE_f32(OptionPrice, xOptionPrice,gvl);
+    xfXd1 = CNDF_SIMD( xD1);
+    xfXd2 = CNDF_SIMD( xD2);
+
+    xStrikePrice = _MM_LOAD_f32(strike);
+    xFutureValueX = _MM_MUL_f32(xFutureValueX, xStrikePrice);
+
+    xOtype    = _MM_LOAD_i32(otype);
+    xZero     = _MM_SET_i32(0);
+    xMask     = _MM_VMSEQ_i32(xZero,xOtype, _MM_CMPINT_EQ);
+    xfXd1   = _MM_MERGE_f32(xMask, _MM_SUB_f32(_MM_SET_f32(1.0),xfXd1),xfXd1);
+    xStockPrice = _MM_LOAD_f32(sptprice);
+    xOptionPrice1 = _MM_MUL_f32(xStockPrice, xfXd1);
+    xfXd2   = _MM_MERGE_f32(xMask, _MM_SUB_f32(_MM_SET_f32(1.0),xfXd2),xfXd2);
+    xOptionPrice2 = _MM_MUL_f32(xFutureValueX, xfXd2);
+    xOptionPrice = _MM_SUB_f32(xOptionPrice2,xOptionPrice1);
+    xOptionPrice = _MM_VFSGNJX_f32(xOptionPrice);
+    _MM_STORE_f32(OptionPrice, xOptionPrice);
 }
+
+//void BlkSchlsEqEuroNoDiv_vector (fptype * OptionPrice, int numOptions, fptype * sptprice,
+//                          fptype * strike, fptype * rate, fptype * volatility,
+//                          fptype * time, int * otype/*,long int *  otype_d*/, float timet ,unsigned long int gvl)
+//{
+//    // local private working variables for the calculation
+//    _MMR_f32 xStockPrice;
+//    _MMR_f32 xStrikePrice;
+//    _MMR_f32 xRiskFreeRate;
+//    _MMR_f32 xVolatility;
+//    _MMR_f32 xTime;
+//    _MMR_f32 xSqrtTime;
+//    _MMR_f32 xLogTerm;
+//    _MMR_f32 xD1, xD2;
+//    _MMR_f32 xPowerTerm;
+//    _MMR_f32 xDen;
+//
+//    _MMR_f32 xRatexTime;
+//    _MMR_f32 xFutureValueX;
+//
+//    _MMR_MASK_i32 xMask;
+//    _MMR_i32 xOtype;
+//    _MMR_i32  xZero;
+//
+//    _MMR_f32 xOptionPrice;
+//    _MMR_f32 xOptionPrice1;
+//    _MMR_f32 xOptionPrice2;
+//    _MMR_f32 xfXd1;
+//    _MMR_f32 xfXd2;
+//
+//    xStrikePrice = _MM_LOAD_f32(strike,gvl);
+//    xStockPrice = _MM_LOAD_f32(sptprice,gvl);
+//    xStrikePrice = _MM_DIV_f32(xStockPrice,xStrikePrice,gvl);
+//    xLogTerm = _MM_LOG_f32(xStrikePrice,gvl);
+//    xRiskFreeRate = _MM_LOAD_f32(rate,gvl);
+//    xVolatility = _MM_LOAD_f32(volatility,gvl);
+//    xTime = _MM_LOAD_f32(time,gvl);
+//    xSqrtTime = _MM_SQRT_f32(xTime,gvl);
+//    xRatexTime = _MM_MUL_f32(xRiskFreeRate, xTime,gvl);
+//    xRatexTime = _MM_VFSGNJN_f32(xRatexTime, xRatexTime,gvl);
+//
+//    xFutureValueX = _MM_EXP_f32(xRatexTime,gvl);
+//    xPowerTerm = _MM_MUL_f32(xVolatility, xVolatility,gvl);
+//    xPowerTerm = _MM_MUL_f32(xPowerTerm, _MM_SET_f32(0.5,gvl),gvl);
+//    xD1 = _MM_ADD_f32( xRiskFreeRate , xPowerTerm,gvl);
+//
+//    xD1   = _MM_MADD_f32(xD1,xTime,xLogTerm,gvl);
+//
+//    xDen = _MM_MUL_f32(xVolatility, xSqrtTime,gvl);
+//    xD1 = _MM_DIV_f32(xD1,xDen,gvl);
+//    xD2 = _MM_SUB_f32(xD1,xDen ,gvl);
+//
+//    xfXd1 = CNDF_SIMD( xD1 ,gvl);
+//    xfXd2 = CNDF_SIMD( xD2 ,gvl);
+//
+//    xStrikePrice = _MM_LOAD_f32(strike,gvl);
+//    xFutureValueX = _MM_MUL_f32(xFutureValueX, xStrikePrice,gvl);
+//
+//    xOtype    = _MM_LOAD_i32(otype,gvl);
+//    xZero     = _MM_SET_i32(0,gvl);
+//    xMask     = _MM_VMSEQ_i32(xZero,xOtype,gvl);
+//    xfXd1   = _MM_MERGE_f32(_MM_SUB_f32(_MM_SET_f32(1.0,gvl),xfXd1,gvl),xfXd1, xMask,gvl);
+//    xStockPrice = _MM_LOAD_f32(sptprice,gvl);
+//    xOptionPrice1 = _MM_MUL_f32(xStockPrice, xfXd1,gvl);
+//    xfXd2   = _MM_MERGE_f32(_MM_SUB_f32(_MM_SET_f32(1.0,gvl),xfXd2,gvl),xfXd2, xMask,gvl);
+//    xOptionPrice2 = _MM_MUL_f32(xFutureValueX, xfXd2,gvl);
+//    xOptionPrice = _MM_SUB_f32(xOptionPrice2,xOptionPrice1,gvl);
+//    xOptionPrice = _MM_VFSGNJX_f32(xOptionPrice,xOptionPrice,gvl);
+//    _MM_STORE_f32(OptionPrice, xOptionPrice,gvl);
+//}
 
 #endif // USE_RISCV_VECTOR
 
@@ -429,7 +555,7 @@ int bs_thread(void *tid_ptr) {
     int start = tid * (numOptions / nThreads);
     int end = start + (numOptions / nThreads);
 
-    unsigned long int gvl = __builtin_epi_vsetvl(end, __epi_e32, __epi_m1);
+
     //fptype* price;
     //price = (fptype*)malloc(gvl*sizeof(fptype));
     //price = aligned_alloc(64, gvl*sizeof(fptype));
@@ -439,17 +565,17 @@ int bs_thread(void *tid_ptr) {
 #endif
 
     for (j=0; j<NUM_RUNS; j++) {
+        int limit = loop_bound(INT32_SPECIES_512, numOptions);
 #ifdef ENABLE_OPENMP
 #pragma omp parallel for private(i, price, priceDelta)
-        for (i=0; i<numOptions; i += gvl) {
+        for (i=0; i<limit; i += INT32_SPECIES_512) {
 #else  //ENABLE_OPENMP
-        for (i=start; i<end; i += gvl) {
+        for (i=start; i<end; i += INT32_SPECIES_512) {
 #endif //ENABLE_OPENMP
             // Calling main function to calculate option value based on Black & Scholes's
             // equation.
-            gvl = __builtin_epi_vsetvl(end-i, __epi_e32, __epi_m1);
-            BlkSchlsEqEuroNoDiv_vector( &(prices[i]), gvl, &(sptprice[i]), &(strike[i]),
-                                &(rate[i]), &(volatility[i]), &(otime[i]), &(otype[i])/*,&(otype_d[i])*/, 0,gvl);
+            BlkSchlsEqEuroNoDiv_vector( &(prices[i]), &(sptprice[i]), &(strike[i]),
+                                &(rate[i]), &(volatility[i]), &(otime[i]), &(otype[i])/*,&(otype_d[i])*/, 0,i);
             //for (k=0; k<gvl; k++) {
             //  prices[i+k] = price[k];
             //}
@@ -464,7 +590,13 @@ int bs_thread(void *tid_ptr) {
             }
 #endif
         }
-        FENCE();
+        for (; i < numOptions; i++) {
+            float price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
+                                         rate[i], volatility[i], otime[i],
+                                         otype[i], 0);
+            prices[i] = price;
+        }
+//        FENCE();
     }
 
 #ifdef ENABLE_PARSEC_HOOKS

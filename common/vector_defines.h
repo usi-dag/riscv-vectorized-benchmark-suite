@@ -2,8 +2,8 @@
 #define VECTOR_DEFINITION
 
 #include <math.h>
-#include <immintrin.h>
-
+//#include <immintrin.h>
+#include <x86intrin.h>
 #define _MM_ALIGN64 __attribute__((aligned (64)))
 
 #define MUSTINLINE __attribute__((always_inline))
@@ -28,7 +28,7 @@ inline int loop_bound(int species_size, int length) {
 
 //#define _MMR_f64        	__epi_1xf64
 #define _MMR_f64        	__m512d
-//TODO #define _MMR_f32        	__epi_2xf32
+#define _MMR_f32        	__m512
 
 //TODO #define _MMR_2xf64			__epi_2xf64
 //TODO #define _MMR_4xf64			__epi_4xf32
@@ -92,7 +92,7 @@ inline int loop_bound(int species_size, int length) {
 //TODO #define _MM_MAX_i32         __builtin_epi_vmax_2xi32
 
 //TODO #define _MM_SLL_i64     	__builtin_epi_vsll_1xi64
-//TODO #define _MM_SLL_i32     	__builtin_epi_vsll_2xi32
+ #define _MM_SLL_i32     	_mm512_sllv_epi32
 
 //TODO #define _MM_SRL_i64     	__builtin_epi_vsrl_1xi64
 //TODO #define _MM_SRL_i32     	__builtin_epi_vsrl_2xi32
@@ -124,19 +124,19 @@ inline int loop_bound(int species_size, int length) {
 //---------------------------------------------------------------------------
 // FLOATING POINT INTRINSICS
 
-//#define _MM_LOAD_f64    	__builtin_epi_vload_1xf64
+
 #define _MM_LOAD_f64    	_mm512_loadu_pd
-//TODO #define _MM_LOAD_f32    	__builtin_epi_vload_2xf32
+#define _MM_LOAD_f32    	_mm512_loadu_ps
 
 //TODO #define _MM_LOAD_INDEX_f64 __builtin_epi_vload_indexed_1xf64
 //TODO #define _MM_LOAD_INDEX_f32 __builtin_epi_vload_indexed_2xf32
 
 //TODO #define _MM_LOAD_STRIDE_f64 __builtin_epi_vload_strided_1xf64
-#//TODO define _MM_LOAD_STRIDE_f32 __builtin_epi_vload_strided_2xf32
+//TODO #define _MM_LOAD_STRIDE_f32 __builtin_epi_vload_strided_2xf32
 
 //#define _MM_STORE_f64   	__builtin_epi_vstore_1xf64
 #define _MM_STORE_f64   	_mm512_storeu_pd
-//TODO #define _MM_STORE_f32   	__builtin_epi_vstore_2xf32
+#define _MM_STORE_f32   	_mm512_storeu_ps
 
 //TODO #define _MM_STORE_INDEX_f64 __builtin_epi_vstore_indexed_1xf64
 //TODO #define _MM_STORE_INDEX_f32 __builtin_epi_vstore_indexed_2xf32
@@ -145,52 +145,52 @@ inline int loop_bound(int species_size, int length) {
 //TODO #define _MM_STORE_STRIDE_f32 __builtin_epi_vstore_strided_2xf32
 
 #define _MM_MUL_f64     	_mm512_mul_pd
-//TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
+#define _MM_MUL_f32     	_mm512_mul_ps
 
 //TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
 //TODO #define _MM_MUL_f32     	__builtin_epi_vfmul_2xf32
 #define _MM_ADD_f64     	_mm512_add_pd
-//TODO #define _MM_ADD_f32     	__builtin_epi_vfadd_2xf32
+#define _MM_ADD_f32     	_mm512_add_ps
 
 //TODO #define _MM_SUB_f64     	__builtin_epi_vfsub_1xf64
-//TODO #define _MM_SUB_f32     	__builtin_epi_vfsub_2xf32
+#define _MM_SUB_f32     	_mm512_sub_ps
 
 //TODO #define _MM_SUB_f64_MASK	__builtin_epi_vfsub_1xf64_mask
-//TODO #define _MM_SUB_f32_MASK	__builtin_epi_vfsub_2xf32_mask
+#define _MM_SUB_f32_MASK	_mm512_mask_sub_ps
 
 //TODO #define _MM_ADD_f64_MASK  __builtin_epi_vfadd_1xf64_mask
 //TODO #define _MM_ADD_f32_MASK  __builtin_epi_vfadd_2xf32_mask
 
 //TODO #define _MM_DIV_f64     	__builtin_epi_vfdiv_1xf64
-//TODO #define _MM_DIV_f32     	__builtin_epi_vfdiv_2xf32
+#define _MM_DIV_f32     	_mm512_div_ps
 
 //TODO #define _MM_DIV_2xf64		__builtin_epi_vfdiv_2xf64
 //TODO #define _MM_DIV_4xf32     	__builtin_epi_vfdiv_4xf32
 
 //TODO #define _MM_SQRT_f64    	__builtin_epi_vfsqrt_1xf64
-//TODO #define _MM_SQRT_f32    	__builtin_epi_vfsqrt_2xf32
+#define _MM_SQRT_f32    	_mm512_sqrt_ps
 
 //#define _MM_SET_f64     	__builtin_epi_vbroadcast_1xf64
 #define _MM_SET_f64     	_mm512_set1_pd
-//TODO #define _MM_SET_f32     	__builtin_epi_vbroadcast_2xf32
+#define _MM_SET_f32     	_mm512_set1_ps
 
 //TODO define _MM_MIN_f64         __builtin_epi_vfmin_1xf64
-//TODO define _MM_MIN_f32         __builtin_epi_vfmin_2xf32
+#define _MM_MIN_f32         _mm512_min_ps
 
 //TODO #define _MM_MAX_f64         __builtin_epi_vfmax_1xf64
-//TODO #define _MM_MAX_f32         __builtin_epi_vfmax_2xf32
+#define _MM_MAX_f32         _mm512_max_ps
 
 //TODO #define _MM_VFSGNJ_f64      __builtin_epi_vfsgnj_1xf64
 //TODO #define _MM_VFSGNJ_f32      __builtin_epi_vfsgnj_2xf32
 
 //TODO #define _MM_VFSGNJN_f64     __builtin_epi_vfsgnjn_1xf64
-//TODO #define _MM_VFSGNJN_f32     __builtin_epi_vfsgnjn_2xf32
+#define _MM_VFSGNJN_f32     _mm512_fnmadd_ps
 
 //TODO #define _MM_VFSGNJX_f64     __builtin_epi_vfsgnjx_1xf64
-//TODO #define _MM_VFSGNJX_f32 	__builtin_epi_vfsgnjx_2xf32
+#define _MM_VFSGNJX_f32 	_mm512_abs_ps
 
 //TODO #define _MM_MERGE_f64  		__builtin_epi_vfmerge_1xf64
-//TODO #define _MM_MERGE_f32 		__builtin_epi_vfmerge_2xf32
+#define _MM_MERGE_f32 		_mm512_mask_blend_ps
 
 //TODO #define _MM_REDSUM_f64  	__builtin_epi_vfredsum_1xf64
 //TODO #define _MM_REDSUM_f32  	__builtin_epi_vfredsum_2xf32
@@ -208,19 +208,19 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
     return _MM_ADD_f64(y, _MM_MUL_f64(x, a));
 }
 
-//TODO #define _MM_MACC_f32  		__builtin_epi_vfmacc_2xf32
+#define _MM_MACC_f32  		_mm512_fmadd_ps
 
 //TODO #define _MM_MADD_f64  		__builtin_epi_vfmadd_1xf64
-//TODO #define _MM_MADD_f32  		__builtin_epi_vfmadd_2xf32
+#define _MM_MADD_f32  		_mm512_fmadd_ps
 
 //---------------------------------------------------------------------------
 // CONVERSION INTRINSICS
 
 //TODO #define _MM_VFCVT_F_X_f64   __builtin_epi_vfcvt_f_x_1xf64_1xi64
-//TODO #define _MM_VFCVT_F_X_f32   __builtin_epi_vfcvt_f_x_2xf32_2xi32
+#define _MM_VFCVT_F_X_f32   _mm512_castsi512_ps
 
 //TODO #define _MM_VFCVT_X_F_i64   __builtin_epi_vfcvt_x_f_1xi64_1xf64
-//TODO #define _MM_VFCVT_X_F_i32   __builtin_epi_vfcvt_x_f_2xi32_2xf32
+#define _MM_VFCVT_X_F_i32   _mm512_castps_si512
 
 //TODO #define _MM_VFWCVT_F_F_f64  __builtin_epi_vfwcvt_f_f_2xf64_2xf32
 //TODO #define _MM_VFNCVT_F_F_f32  __builtin_epi_vfncvt_f_f_2xf32_2xf64
@@ -283,8 +283,8 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 //---------------------------------------------------------------------------
 // MASK DEFINITIONS
 
-//TODO #define _MMR_MASK_i64   	__epi_1xi1
-//TODO #define _MMR_MASK_i32   	__epi_2xi1
+//#define _MMR_MASK_i64   	_load_mask64
+#define _MMR_MASK_i32   	__mmask16
 
 //TODO #define _MM_CAST_i1_i64  	__builtin_epi_cast_1xi1_1xi64
 //TODO #define _MM_CAST_i1_i32  	__builtin_epi_cast_2xi1_2xi32
@@ -321,7 +321,7 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 //TODO #define _MM_VMSLT_i32     __builtin_epi_vmslt_2xi32
 
 //TODO #define _MM_VMSEQ_i64		__builtin_epi_vmseq_1xi64
-//TODO #define _MM_VMSEQ_i32		__builtin_epi_vmseq_2xi32
+#define _MM_VMSEQ_i32		_mm512_cmp_epi32_mask
 
 // Fp
 //TODO #define _MM_VFEQ_f64        __builtin_epi_vmfeq_1xf64
@@ -334,7 +334,11 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 //TODO #define _MM_VFGE_f32        __builtin_epi_vmfge_2xf32
 
 //TODO #define _MM_VFLT_f64        __builtin_epi_vmflt_1xf64
-//TODO #define _MM_VFLT_f32        __builtin_epi_vmflt_2xf32
+#define _MM_VFLT_f32        _mm512_mask_lt_ps_mask // __mmask16 k1, __m512 a, __m512 b, const int imm8
+
+inline _MMR_MASK_i32 _mm512_mask_lt_ps_mask(_MMR_MASK_i32 mask, _MMR_f32 a, _MMR_f32 b) {
+    return _mm512_mask_cmp_ps_mask(mask, a, b, _CMP_LT_OS);
+}
 
 //TODO #define _MM_VFLE_f64        __builtin_epi_vmfle_1xf64
 //TODO #define _MM_VFLE_f32        __builtin_epi_vmfle_2xf32
@@ -345,15 +349,15 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 #ifndef _MM_LOG
 #define _MM_LOG
 //TODO #include "__log.h"
-//TODO #define _MM_LOG_f64 		__log_1xf64
-//TODO #define _MM_LOG_f32 		__log_2xf32
+#define _MM_LOG_f64 		_mm512_log_pd
+#define _MM_LOG_f32 		_mm512_log_ps
 #endif
 
 #ifndef _MM_EXP
 #define _MM_EXP
-//TODO #include "__exp.h"
+#include "__exp.h"
 //TODO #define _MM_EXP_f64 		__exp_1xf64
-//TODO #define _MM_EXP_f32 		__exp_2xf32
+#define _MM_EXP_f32 __exp_2xf32		// _mm512_exp_ps only for intel compiler
 #endif
 
 #ifndef _MM_COS
