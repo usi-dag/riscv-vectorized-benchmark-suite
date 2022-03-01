@@ -111,6 +111,7 @@ inline int loop_bound(int species_size, int length) {
 
 //TODO #define _MM_REDSUM_i64   	__builtin_epi_vredsum_1xi64
 #define _MM_REDSUM_i32   	_mm512_reduce_add_epi32
+#define _MM_MASK_REDSUM_i32 _mm512_mask_reduce_add_epi32
 //TODO #define _MM_REDSUM_i16      __builtin_epi_vredsum_4xi16
 //TODO #define _MM_REDSUM_i8      __builtin_epi_vredsum_8xi8
 
@@ -127,6 +128,8 @@ inline int loop_bound(int species_size, int length) {
 
 #define _MM_LOAD_f64    	_mm512_loadu_pd
 #define _MM_LOAD_f32    	_mm512_loadu_ps
+
+#define __MM_MASK_LOAD_f32 _mm512_mask_load_ps
 
 //TODO #define _MM_LOAD_INDEX_f64 __builtin_epi_vload_indexed_1xf64
 //TODO #define _MM_LOAD_INDEX_f32 __builtin_epi_vload_indexed_2xf32
@@ -325,7 +328,8 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 
 // Fp
 //TODO #define _MM_VFEQ_f64        __builtin_epi_vmfeq_1xf64
-//TODO #define _MM_VFEQ_f32        __builtin_epi_vmfeq_2xf32
+#define _MM_VFEQ_f32        _mm512_mask_eq_ps_mask
+
 
 //TODO #define _MM_VFGT_f64        __builtin_epi_vmfgt_1xf64
 //TODO #define _MM_VFGT_f32        __builtin_epi_vmfgt_2xf32
@@ -337,6 +341,10 @@ inline _MMR_f64 madd(_MMR_f64 y, _MMR_f64 a, _MMR_f64 x) {
 #define _MM_VFLT_f32        _mm512_mask_lt_ps_mask // __mmask16 k1, __m512 a, __m512 b, const int imm8
 
 inline _MMR_MASK_i32 _mm512_mask_lt_ps_mask(_MMR_MASK_i32 mask, _MMR_f32 a, _MMR_f32 b) {
+    return _mm512_mask_cmp_ps_mask(mask, a, b, _CMP_EQ_OQ);
+}
+
+inline _MMR_MASK_i32 _mm512_mask_eq_ps_mask(_MMR_MASK_i32 mask, _MMR_f32 a, _MMR_f32 b) {
     return _mm512_mask_cmp_ps_mask(mask, a, b, _CMP_LT_OS);
 }
 
