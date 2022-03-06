@@ -53,8 +53,80 @@ using namespace std;
 netlist_elem::netlist_elem()
 :present_loc(NULL)//start with the present_loc as nothing at all.  Filled in later by the netlist
 {
+#ifdef USE_RISCV_VECTOR
+    fanin_locs_x  = (unsigned long *) malloc(INT32_SPECIES_512 * sizeof(unsigned long *));
+    fanin_locs_y  = (unsigned long *) malloc(INT32_SPECIES_512 * sizeof(unsigned long *));
+    fanout_locs_x = (unsigned long *) malloc(INT32_SPECIES_512 * sizeof(unsigned long *));
+    fanout_locs_y = (unsigned long *) malloc(INT32_SPECIES_512 * sizeof(unsigned long *));
+#endif
 }
 
+//netlist_elem::~netlist_elem() {
+//    free(fanin_locs_x );
+//    free(fanin_locs_y );
+//    free(fanout_locs_x);
+//    free(fanout_locs_y);
+//}
+#ifdef USE_RISCV_VECTOR
+
+
+
+void netlist_elem::add_fanin_x(unsigned long * el) {
+
+    if (fanin_x_size >= fanin_x_capacity) {
+        fanin_locs_x = (unsigned long *) realloc(fanin_locs_x, fanin_x_size * 2 * sizeof(unsigned long *));
+        fanin_x_capacity = fanin_x_size * 2;
+    }
+
+    fanin_locs_x[fanin_x_size++] = *el;
+
+    if (fanin_x_size >= 16) {
+        swap_cost_vector_fanin = &netlist_elem::swap_cost_vector_512;
+    } if (fanin_x_size < 16) {
+        swap_cost_vector_fanin = &netlist_elem::swap_cost_vector_256;
+    } if (fanin_x_size < 8) {
+        swap_cost_vector_fanin = &netlist_elem::swap_cost_vector_128;
+    }
+}
+
+void netlist_elem::add_fanin_y(unsigned long * el) {
+
+    if (fanin_y_size >= fanin_y_capacity) {
+        fanin_locs_y = (unsigned long *) realloc(fanin_locs_y, fanin_y_size * 2 * sizeof(unsigned long *));
+        fanin_y_capacity = fanin_y_size * 2;
+    }
+
+    fanin_locs_y[fanin_y_size++] = *el;
+}
+
+void netlist_elem::add_fanout_x(unsigned long * el) {
+
+    if (fanout_x_size >= fanout_x_capacity) {
+        fanout_locs_x = (unsigned long *) realloc(fanout_locs_x, fanout_x_size * 2 * sizeof(unsigned long *));
+        fanout_x_capacity = fanout_x_size * 2;
+    }
+
+    fanout_locs_x[fanout_x_size++] = *el;
+
+    if (fanout_x_size >= 16) {
+        swap_cost_vector_fanout = &netlist_elem::swap_cost_vector_512;
+    } if (fanout_x_size < 16) {
+        swap_cost_vector_fanout = &netlist_elem::swap_cost_vector_256;
+    } if (fanout_x_size < 8) {
+        swap_cost_vector_fanout = &netlist_elem::swap_cost_vector_128;
+    }
+}
+
+void netlist_elem::add_fanout_y(unsigned long * el) {
+
+    if (fanout_y_size >= fanout_y_capacity) {
+        fanout_locs_y = (unsigned long *) realloc(fanout_locs_y, fanout_y_size * 2 * sizeof(unsigned long *));
+        fanout_y_capacity = fanout_y_size * 2;
+    }
+
+    fanout_locs_y[fanout_y_size++] = *el;
+}
+#endif
 //*****************************************************************************************
 // Calculates the routing cost using the manhatten distance
 // I make sure to get the pointer in one operation, and then use it
@@ -154,15 +226,13 @@ routing_cost_t netlist_elem::routing_cost_given_loc(location_t loc)
 //
 //    return (double)(yes_swap - no_swap);
 //}
-routing_cost_t netlist_elem::swap_cost_vector(location_t* old_loc, location_t* new_loc) {
-    int fanin_size = fanin.size();
-    int fanout_size = fanout.size();
+
+routing_cost_t swap_cost_vector_512(location_t* old_loc, location_t* new_loc, unsigned long* fan_x, unsigned long* fan_y, int size) {
 
     routing_cost_t no_swap = 0;
 	  routing_cost_t yes_swap = 0;
 
-    int limit_fanin = loop_bound(INT32_SPECIES_512, fanin_size);
-    int limit_fanout = loop_bound(INT32_SPECIES_512, fanout_size);
+    int limit_fanin = loop_bound(INT32_SPECIES_512, size);
 
     _MMR_i32 no_swap_vector = _MM_SET_i32(0);
     _MMR_i32 yes_swap_vector = _MM_SET_i32(0);
@@ -170,6 +240,139 @@ routing_cost_t netlist_elem::swap_cost_vector(location_t* old_loc, location_t* n
     _MMR_i32 old_loc_y = _MM_SET_i32(old_loc->y);
     _MMR_i32 new_loc_x = _MM_SET_i32(new_loc->x);
     _MMR_i32 new_loc_y = _MM_SET_i32(new_loc->y);
+
+    int i;
+
+    for (i = 0; i < limit_fanin; i += INT32_SPECIES_512) {
+        _MMR_i32 fanin_loc_xv = _MM_LOAD_i32((const long int*)&(fan_x[i]));
+        _MMR_i32 fanin_loc_yv = _MM_LOAD_i32((const long int*)&(fan_y[i]));
+
+        no_swap_vector = _MM_ADD_i32(no_swap_vector, _MM_ABS_i32(_MM_SUB_i32(old_loc_x, fanin_loc_xv)));
+        no_swap_vector = _MM_ADD_i32(no_swap_vector, _MM_ABS_i32(_MM_SUB_i32(old_loc_y, fanin_loc_yv)));
+
+        yes_swap_vector = _MM_ADD_i32(yes_swap_vector, _MM_ABS_i32(_MM_SUB_i32(new_loc_x, fanin_loc_xv)));
+        yes_swap_vector = _MM_ADD_i32(yes_swap_vector, _MM_ABS_i32(_MM_SUB_i32(new_loc_y, fanin_loc_yv)));
+    }
+
+    for (; i < size; i++) {
+        no_swap += fabs(old_loc->x - fan_x[i]);
+        no_swap += fabs(old_loc->y - fan_y[i]);
+
+        yes_swap += fabs(new_loc->x - fan_x[i]);
+        yes_swap += fabs(new_loc->y - fan_y[i]);
+    }
+
+    no_swap += _MM_REDSUM_i32(no_swap_vector);
+    yes_swap += _MM_REDSUM_i32(yes_swap_vector);
+
+    return yes_swap - no_swap;
+}
+
+routing_cost_t swap_cost_vector_256(location_t* old_loc, location_t* new_loc, unsigned long* fan_x, unsigned long* fan_y, int size) {
+
+    routing_cost_t no_swap = 0;
+	  routing_cost_t yes_swap = 0;
+
+    int limit_fanin = loop_bound(INT32_SPECIES_256, size);
+
+    __m256i no_swap_vector = _mm256_setzero_si256();
+    __m256i yes_swap_vector = _mm256_setzero_si256();
+    __m256i old_loc_x = _mm256_set1_epi32(old_loc->x);
+    __m256i old_loc_y = _mm256_set1_epi32(old_loc->y);
+    __m256i new_loc_x = _mm256_set1_epi32(new_loc->x);
+    __m256i new_loc_y = _mm256_set1_epi32(new_loc->y);
+
+    int i;
+
+    for (i = 0; i < limit_fanin; i += INT32_SPECIES_256) {
+        __m256i fanin_loc_xv = _mm256_loadu_si256((const __m256i_u*)(const long int*)&(fan_x[i]));
+        __m256i fanin_loc_yv = _mm256_loadu_si256((const __m256i_u*)(const long int*)&(fan_y[i]));
+
+        no_swap_vector = _mm256_add_epi32(no_swap_vector, _mm256_abs_epi32(_mm256_sub_epi32(old_loc_x, fanin_loc_xv)));
+        no_swap_vector = _mm256_add_epi32(no_swap_vector, _mm256_abs_epi32(_mm256_sub_epi32(old_loc_y, fanin_loc_yv)));
+
+        yes_swap_vector = _mm256_add_epi32(yes_swap_vector, _mm256_abs_epi32(_mm256_sub_epi32(new_loc_x, fanin_loc_xv)));
+        yes_swap_vector = _mm256_add_epi32(yes_swap_vector, _mm256_abs_epi32(_mm256_sub_epi32(new_loc_y, fanin_loc_yv)));
+    }
+
+    for (; i < size; i++) {
+        no_swap += fabs(old_loc->x - fan_x[i]);
+        no_swap += fabs(old_loc->y - fan_y[i]);
+
+        yes_swap += fabs(new_loc->x - fan_x[i]);
+        yes_swap += fabs(new_loc->y - fan_y[i]);
+    }
+
+    // no reduction function for 256 vector
+    for (int k = 0; k < INT32_SPECIES_256; k++) {
+        no_swap += no_swap_vector[k];
+        yes_swap += yes_swap_vector[k];
+    }
+
+    return yes_swap - no_swap;
+}
+
+routing_cost_t swap_cost_vector_128(location_t* old_loc, location_t* new_loc, unsigned long* fan_x,unsigned long* fan_y, int size) {
+
+    routing_cost_t no_swap = 0;
+	  routing_cost_t yes_swap = 0;
+
+    int limit_fanin = loop_bound(INT32_SPECIES_128, size);
+
+    __m128i no_swap_vector = _mm_setzero_si128();
+    __m128i yes_swap_vector = _mm_setzero_si128();
+    __m128i old_loc_x = _mm_set1_epi32(old_loc->x);
+    __m128i old_loc_y = _mm_set1_epi32(old_loc->y);
+    __m128i new_loc_x = _mm_set1_epi32(new_loc->x);
+    __m128i new_loc_y = _mm_set1_epi32(new_loc->y);
+
+    int i;
+
+    for (i = 0; i < limit_fanin; i += INT32_SPECIES_128) {
+        __m128i fanin_loc_xv = _mm_loadu_si128((const __m128i_u*)(const long int*)&(fan_x[i]));
+        __m128i fanin_loc_yv = _mm_loadu_si128((const __m128i_u*)(const long int*)&(fan_y[i]));
+
+        no_swap_vector = _mm_add_epi32(no_swap_vector, _mm_abs_epi32(_mm_sub_epi32(old_loc_x, fanin_loc_xv)));
+        no_swap_vector = _mm_add_epi32(no_swap_vector, _mm_abs_epi32(_mm_sub_epi32(old_loc_y, fanin_loc_yv)));
+
+        yes_swap_vector = _mm_add_epi32(yes_swap_vector, _mm_abs_epi32(_mm_sub_epi32(new_loc_x, fanin_loc_xv)));
+        yes_swap_vector = _mm_add_epi32(yes_swap_vector, _mm_abs_epi32(_mm_sub_epi32(new_loc_y, fanin_loc_yv)));
+    }
+
+    for (; i < size; i++) {
+        no_swap += fabs(old_loc->x - fan_x[i]);
+        no_swap += fabs(old_loc->y - fan_y[i]);
+
+        yes_swap += fabs(new_loc->x - fan_x[i]);
+        yes_swap += fabs(new_loc->y - fan_y[i]);
+    }
+
+    // no reduction function for 128 vector
+    for (int k = 0; k < INT32_SPECIES_128; k++) {
+        no_swap += no_swap_vector[k];
+        yes_swap += yes_swap_vector[k];
+    }
+
+    return yes_swap - no_swap;
+}
+
+routing_cost_t netlist_elem::swap_cost_vector(location_t* old_loc, location_t* new_loc) {
+    int fanin_size = fanin.size();
+    int fanout_size = fanout.size();
+
+    routing_cost_t no_swap = 0;
+	  routing_cost_t yes_swap = 0;
+
+    int limit_fanin = loop_bound(INT32_SPECIES_512, max(fanin_x_size, INT32_SPECIES_512));
+    int limit_fanout = loop_bound(INT32_SPECIES_512, max(fanout_x_size, INT32_SPECIES_512));
+
+    _MMR_i32 no_swap_vector = _MM_SET_i32(0);
+    _MMR_i32 yes_swap_vector = _MM_SET_i32(0);
+    _MMR_i32 old_loc_x = _MM_SET_i32(old_loc->x);
+    _MMR_i32 old_loc_y = _MM_SET_i32(old_loc->y);
+    _MMR_i32 new_loc_x = _MM_SET_i32(new_loc->x);
+    _MMR_i32 new_loc_y = _MM_SET_i32(new_loc->y);
+
 
     int i;
 
@@ -194,6 +397,14 @@ routing_cost_t netlist_elem::swap_cost_vector(location_t* old_loc, location_t* n
         yes_swap += fabs(new_loc->y - fanin_loc->y);
     }
 
+
+    no_swap += _MM_REDSUM_i32(no_swap_vector);
+    yes_swap += _MM_REDSUM_i32(yes_swap_vector);
+
+
+    no_swap_vector = _MM_SET_i32(0);
+    yes_swap_vector = _MM_SET_i32(0);
+
     for (i = 0; i < limit_fanout; i += INT32_SPECIES_512) {
         _MMR_i32 fanout_loc_xv = _MM_LOAD_i32((const long *)&(fanout_locs_x[i]));
         _MMR_i32 fanout_loc_yv = _MM_LOAD_i32((const long *)&(fanout_locs_y[i]));
@@ -216,8 +427,8 @@ routing_cost_t netlist_elem::swap_cost_vector(location_t* old_loc, location_t* n
 
     no_swap += _MM_REDSUM_i32(no_swap_vector);
     yes_swap += _MM_REDSUM_i32(yes_swap_vector);
-    return yes_swap - no_swap;
 
+    return yes_swap - no_swap;
 }
 #else // !USE_RISCV_VECTOR
 routing_cost_t netlist_elem::swap_cost(location_t* old_loc, location_t* new_loc)

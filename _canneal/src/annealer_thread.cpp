@@ -174,8 +174,15 @@ routing_cost_t annealer_thread::calculate_delta_routing_cost_vector(netlist_elem
     location_t* a_loc = a->present_loc.Get();
     location_t* b_loc = b->present_loc.Get();
 
-    delta_cost = a->swap_cost_vector(a_loc, b_loc);
-    delta_cost = delta_cost + b->swap_cost_vector(b_loc, a_loc);
+    if (a->fanin_x_size > 0) {
+        delta_cost = (a->*a->swap_cost_vector_fanin)(a_loc, b_loc, a->fanin_locs_x, a->fanin_locs_y, a->fanin_x_size);
+        delta_cost = delta_cost + (a->*a->swap_cost_vector_fanout)(a_loc, b_loc, a->fanout_locs_x, a->fanout_locs_y, a->fanout_x_size);
+    }
+
+    if (b->fanin_x_size > 0) {
+        delta_cost = delta_cost + (b->*b->swap_cost_vector_fanin)(a_loc, b_loc, b->fanin_locs_x, b->fanin_locs_y, b->fanin_x_size);
+        delta_cost = delta_cost + (b->*b->swap_cost_vector_fanout)(a_loc, b_loc, b->fanout_locs_x, b->fanout_locs_y, b->fanout_x_size);
+    }
 
     return delta_cost;
 }

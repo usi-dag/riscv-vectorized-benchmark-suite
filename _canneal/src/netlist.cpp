@@ -37,6 +37,10 @@
 #include <assert.h>
 #include <deque>
 
+#ifdef USE_RISCV_VECTOR
+#include "../../common/vector_defines.h"
+#endif
+
 using namespace std;
 
 void netlist::release(netlist_elem* elem)
@@ -214,12 +218,12 @@ netlist::netlist(const std::string& filename)
 #ifdef USE_RISCV_VECTOR
       unsigned long * fanin_location_x = (unsigned long *)&fanin_elem->present_loc.Get()->x;
 			unsigned long * fanin_location_y = (unsigned long *)&fanin_elem->present_loc.Get()->y;
-			present_elem->fanin_locs_x.push_back(fanin_location_x);
-			present_elem->fanin_locs_y.push_back(fanin_location_y);
+			present_elem->add_fanin_x(fanin_location_x);
+			present_elem->add_fanin_y(fanin_location_y);
 			unsigned long * fanout_location_x = (unsigned long *)&present_elem->present_loc.Get()->x;
       unsigned long * fanout_location_y = (unsigned long *)&present_elem->present_loc.Get()->y;
-			fanin_elem->fanout_locs_x.push_back(fanout_location_x);
-			fanin_elem->fanout_locs_y.push_back(fanout_location_y);
+			fanin_elem->add_fanout_x(fanout_location_x);
+			fanin_elem->add_fanout_x(fanout_location_y);
 			//printf("fanin_elem->present_loc a 0x%x \n", fanin_location );
 			//printf("fanin_elem->present_loc a 0x%x \n", fanout_location );
 #endif
