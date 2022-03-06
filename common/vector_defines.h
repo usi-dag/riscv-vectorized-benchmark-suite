@@ -2,7 +2,7 @@
 #define VECTOR_DEFINITION
 
 #include <math.h>
-//#include <immintrin.h>
+#include <immintrin.h>
 #include <x86intrin.h>
 #define _MM_ALIGN64 __attribute__((aligned (64)))
 

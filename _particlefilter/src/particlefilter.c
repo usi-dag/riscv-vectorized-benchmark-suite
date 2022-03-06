@@ -77,8 +77,9 @@ void setIf(int testValue, int newValue, int * array3D, int * dimX, int * dimY, i
     for(x = 0; x < *dimX; x++){
         for(y = 0; y < *dimY; y++){
             for(z = 0; z < *dimZ; z++){
-                if(array3D[x * *dimY * *dimZ+y * *dimZ + z] == testValue)
-                array3D[x * *dimY * *dimZ + y * *dimZ + z] = newValue;
+                if(array3D[x * *dimY * *dimZ+y * *dimZ + z] == testValue) {
+                    array3D[x * *dimY * *dimZ + y * *dimZ + z] = newValue;
+                }
             }
         }
     }
@@ -1011,6 +1012,13 @@ int main(int argc, char * argv[]){
     free(randu_vector_num);
     #endif
 
+    for (i = 0; i < Nparticles; i++) {
+        printf("seed[%d] -> %d\n",i, seed[i]);
+    }
+
+    for (i = 0; i < 50; i++) {
+        printf("%d -> %d\n", i, I[i]);
+    }
 
 
     free(seed);
