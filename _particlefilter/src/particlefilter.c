@@ -120,7 +120,7 @@ inline _MMR_f64 randu_vector(int * seed, int index ,unsigned long int gvl)
     return xResult;
 }
 */
-inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* num, unsigned long int gvl)
+inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* num)
 {
     /*
     Esta parte del codigo deberia ser en 32 bits, pero las instrucciones de conversion aún no están disponibles,
@@ -128,14 +128,14 @@ inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* n
     */
     //double result[256];
     //int num[256];
-    for(int x = index; x < index+gvl; x++){
+    for(int x = index; x < index+SPECIES_512; x++){
         num[x-index] = A*seed[x] + C;
         seed[x] = num[x-index] % M;
         result[x-index] = fabs(seed[x]/((double) M));
     }
     _MMR_f64    xResult;
-    xResult = _MM_LOAD_f64(&result[0],gvl);
-    FENCE();
+    xResult = _MM_LOAD_f64(&result[0]);
+//    FENCE();
     return xResult;
 }
 #endif // USE_RISCV_VECTOR
@@ -157,19 +157,19 @@ double randn(int * seed, int index){
 }
 
 #ifdef USE_RISCV_VECTOR
-inline _MMR_f64 randn_vector(long int * seed, int index ,double* randu_vector_result,int* randu_vector_num,unsigned long int gvl){
+inline _MMR_f64 randn_vector(long int * seed, int index ,double* randu_vector_result,int* randu_vector_num){
     /*Box-Muller algorithm*/
-    _MMR_f64    xU = randu_vector(seed,index,randu_vector_result,randu_vector_num,gvl);
-    _MMR_f64    xV = randu_vector(seed,index,randu_vector_result,randu_vector_num,gvl);
+    _MMR_f64    xU = randu_vector(seed,index,randu_vector_result,randu_vector_num);
+    _MMR_f64    xV = randu_vector(seed,index,randu_vector_result,randu_vector_num);
     _MMR_f64    xCosine;
     _MMR_f64    xRt;
     
-    xV = _MM_MUL_f64(_MM_SET_f64(PI*2.0,gvl),xV,gvl);
-    xCosine =_MM_COS_f64(xV,gvl);
+    xV = _MM_MUL_f64(_MM_SET_f64(PI*2.0),xV);
+     xCosine =_MM_COS_f64(xV); // TODO ADD AGAIN
     //FENCE();
-    xU = _MM_LOG_f64(xU,gvl);
-    xRt =  _MM_MUL_f64(_MM_SET_f64(-2.0,gvl),xU,gvl);
-    return _MM_MUL_f64(_MM_SQRT_f64(xRt,gvl),xCosine,gvl);
+    xU = _MM_LOG_f64(xU); // TODO ADD AGAIN
+    xRt =  _MM_MUL_f64(_MM_SET_f64(-2.0),xU);
+    return _MM_MUL_f64(_MM_SQRT_f64(xRt),xCosine);
 }
 #endif // USE_RISCV_VECTOR
 /**
@@ -648,12 +648,18 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
     for(x = 0; x < Nparticles; x++){
         weights[x] = 1/((double)(Nparticles));
     }*/
-    unsigned long int gvl = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
 
-    _MMR_f64    xweights = _MM_SET_f64(1.0/((double)(Nparticles)),gvl);
-    for(x = 0; x < Nparticles; x=x+gvl){
-        gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
-        _MM_STORE_f64(&weights[x],xweights,gvl);
+    int limit = loop_bound(SPECIES_512, Nparticles);
+//    unsigned long int gvl = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
+
+    _MMR_f64    xweights = _MM_SET_f64(1.0/((double)(Nparticles)));
+    for(x = 0; x < Nparticles; x=x+SPECIES_512){
+//        gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
+        _MM_STORE_f64(&weights[x],xweights);
+    }
+
+    for (; x < Nparticles; x++) {
+         weights[x] = 1.0/(double)(Nparticles);
     }
     //FENCE();
 
@@ -678,15 +684,15 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
         arrayY[x] = ye;
     }
     */
-    gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
-    _MMR_f64    xArrayX = _MM_SET_f64(xe,gvl);
-    _MMR_f64    xArrayY = _MM_SET_f64(ye,gvl);
-    for(int i = 0; i < Nparticles; i=i+gvl){
-        gvl     = __builtin_epi_vsetvl(Nparticles-i, __epi_e64, __epi_m1);
-        _MM_STORE_f64(&arrayX[i],xArrayX,gvl);
-        _MM_STORE_f64(&arrayY[i],xArrayY,gvl);
+//    gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
+    _MMR_f64    xArrayX = _MM_SET_f64(xe);
+    _MMR_f64    xArrayY = _MM_SET_f64(ye);
+    for(int i = 0; i < limit; i=i+SPECIES_512){
+//        gvl     = __builtin_epi_vsetvl(Nparticles-i, __epi_e64, __epi_m1);
+        _MM_STORE_f64(&arrayX[i],xArrayX);
+        _MM_STORE_f64(&arrayY[i],xArrayY);
     }
-    FENCE();
+//    FENCE();
     
 
     _MMR_f64    xAux;
@@ -701,31 +707,31 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
         //apply motion model
         //draws sample from motion model (random walk). The only prior information
         //is that the object moves 2x as fast as in the y direction
-        gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
-        for(x = 0; x < Nparticles; x=x+gvl){
-            gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
-            xArrayX = _MM_LOAD_f64(&arrayX[x],gvl);
-            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num,gvl);
-            xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(5.0,gvl),gvl); 
-            xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(1.0,gvl),gvl); 
-            xArrayX = _MM_ADD_f64(xAux, xArrayX ,gvl); 
-            _MM_STORE_f64(&arrayX[x],xArrayX,gvl);
+//        gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
+        for(x = 0; x < limit; x=x+SPECIES_512){
+//            gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
+            xArrayX = _MM_LOAD_f64(&arrayX[x]);
+            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num);
+            xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(5.0));
+            xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(1.0));
+            xArrayX = _MM_ADD_f64(xAux, xArrayX);
+            _MM_STORE_f64(&arrayX[x],xArrayX);
             
-            xArrayY = _MM_LOAD_f64(&arrayY[x],gvl);
-            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num,gvl);
-            xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(2.0,gvl),gvl); 
-            xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(-2.0,gvl),gvl); 
-            xArrayY = _MM_ADD_f64(xAux, xArrayY ,gvl); 
-            _MM_STORE_f64(&arrayY[x],xArrayY,gvl);
+            xArrayY = _MM_LOAD_f64(&arrayY[x]);
+            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num);
+            xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(2.0));
+            xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(-2.0));
+            xArrayY = _MM_ADD_f64(xAux, xArrayY);
+            _MM_STORE_f64(&arrayY[x],xArrayY);
         }
-        FENCE();
-        /*
+//        FENCE();
+
         //#pragma omp parallel for shared(arrayX, arrayY, Nparticles, seed) private(x)
-        for(x = 0; x < Nparticles; x++){
+        for(; x < Nparticles; x++){
             arrayX[x] += 1 + 5*randn(seed, x);
             arrayY[x] += -2 + 2*randn(seed, x);
         }
-        */
+
         long long error = get_time();
         printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error));
         //particle filter likelihood
@@ -812,31 +818,47 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
 
         _MMR_f64          xCDF;
         _MMR_f64          xU;
-        _MMR_i64          xArray;
+        _MMR_f64          xArray;
 
         long int vector_complete;
         long int valid;
-        gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
-        for(i = 0; i < Nparticles; i=i+gvl){
-            gvl     = __builtin_epi_vsetvl(Nparticles-i, __epi_e64, __epi_m1);
+//        gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
+
+        int * mask = (int *) malloc(SPECIES_512*sizeof(int *));
+
+        for (int mi = 0; mi < SPECIES_512; mi++) {
+            mask[mi] = 0;
+        }
+
+        for(i = 0; i < limit; i=i+SPECIES_512){
+//            gvl     = __builtin_epi_vsetvl(Nparticles-i, __epi_e64, __epi_m1);
             vector_complete = 0;
-            xMask   = _MM_CAST_i1_i64(__builtin_epi_vbroadcast_1xi64(0,gvl));
-            xArray  = _MM_SET_i64(Nparticles-1,gvl);
-            xU      = _MM_LOAD_f64(&u[i],gvl);
+            xMask   = _MM_VFEQ_f64(xMask, _MM_SET_f64(1), _MM_SET_f64(0));
+            xArray  = _MM_SET_f64(Nparticles-1);
+            xU      = _MM_LOAD_f64(&u[i]);
             for(j = 0; j < Nparticles; j++){    
-                xCDF = _MM_SET_f64(CDF[j],gvl);
-                xComp = _MM_VFGE_f64(xCDF,xU,gvl);
-                xComp = _MM_VMXOR_i64(xComp,xMask,gvl);
-                valid = _MM_VMFIRST_i64(xComp,gvl);
+                xCDF = _MM_SET_f64(CDF[j]);
+                xComp = _MM_VFGE_f64(xComp, xCDF,xU);
+                xComp = _MM_VMXOR_i64(xComp,xMask);
+//                valid = _MM_VMFIRST_i64(xComp); // TODO how to get the first valid bit???
+                valid = -1;
+                for (int v = 0; v < SPECIES_512; v++) {
+                    if (xComp !=0) {
+                        valid = v;
+                        break;
+                    }
+                }
                 if(valid != -1)
                 {
-                    xArray = _MM_MERGE_i64(xArray,_MM_SET_i64(j,gvl),xComp,gvl);
-                    xMask = _MM_VMOR_i64(xComp,xMask,gvl);
-                    vector_complete = _MM_VMPOPC_i64(xMask,gvl);
+                    _MMR_f64 xJ = _MM_ADD_f64_MASK(xJ, xComp, _MM_SET_f64(0), _MM_SET_f64(j));
+                    xArray = _MM_ADD_f64_MASK(xArray, _MM_VMNOT_i64(xComp), xJ, _MM_SET_f64(j));
+                    // _MM_MERGE_i64(xArray,_MM_SET_i64(j,gvl),xComp,gvl);
+                    xMask = _MM_VMOR_i64(xComp,xMask);
+                    vector_complete = _MM_VMPOPC_i64(xMask, SPECIES_512); // TODO no intrinsic for count the number of true values
                 }
-                if(vector_complete == gvl){ break; }
+                if(vector_complete == SPECIES_512){ break; }
             }
-            _MM_STORE_i64(&locations[i],xArray,gvl);
+            _MM_STORE_i64(&locations[i],xArray);
             //xArray = _MM_MUL_i64(xArray,_MM_SET_i64(8,gvl),gvl); // Position in elements to position in bytes
             //xarrayX = _MM_LOAD_INDEX_f64(&arrayX[i],xArray,gvl);
             //xarrayY = _MM_LOAD_INDEX_f64(&arrayY[i],xArray,gvl);
@@ -844,9 +866,9 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
             //_MM_STORE_f64(&yj[i],xarrayY,gvl);
             // This commented lines corresponds to the scalar code below
         }
-        FENCE();
-        /*
-        for(j = 0; j < Nparticles; j++){
+//        FENCE();
+
+        for(j = limit; j < Nparticles; j++){
             i = findIndex(CDF, Nparticles, u[j]);
             if(i == -1)
                     i = Nparticles-1;   
@@ -855,9 +877,9 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
             yj[j] = arrayY[i];
             
         }
-        */
+
         //#pragma omp parallel for shared(CDF, Nparticles, xj, yj, u, arrayX, arrayY) private(i, j)
-        for(j = 0; j < Nparticles; j++){
+        for(j = 0; j < limit; j++){
             i = locations[j];
             xj[j] = arrayX[i];
             yj[j] = arrayY[i];
@@ -969,9 +991,9 @@ int main(int argc, char * argv[]){
     printf("VIDEO SEQUENCE TOOK %f\n", elapsed_time(start, endVideoSequence));
 
     #ifdef USE_RISCV_VECTOR
-    unsigned long int gvl = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
-    double* randu_vector_result = (double*)malloc(gvl*sizeof(double)); 
-    int* randu_vector_num = (int*)malloc(gvl*sizeof(int)); 
+//    unsigned long int gvl = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
+    double* randu_vector_result = (double*)malloc(SPECIES_512*sizeof(double));
+    int* randu_vector_num = (int*)malloc(SPECIES_512*sizeof(int));
     #endif
 
     #ifdef USE_RISCV_VECTOR
