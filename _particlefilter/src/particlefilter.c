@@ -108,8 +108,8 @@ void setIf(int testValue, int newValue, int *array3D, int *dimX, int *dimY, int 
 * @param index The specific index of the seed to be advanced
 * @return a uniformly distributed number [0, 1)
 */
-double randu(int *seed, int index) {
-    int num = A * seed[index] + C;
+double randu(double *seed, int index) {
+    int num = (A * (int) seed[index] + C);
     seed[index] = num % M;
     return fabs(seed[index] / ((double) M));
 }
@@ -135,7 +135,7 @@ inline _MMR_f64 randu_vector(int * seed, int index ,unsigned long int gvl)
     return xResult;
 }
 */
-inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* num)
+inline _MMR_f64 randu_vector(double * seed, int index , double* result, int* num)
 {
     /*
     Esta parte del codigo deberia ser en 32 bits, pero las instrucciones de conversion aún no están disponibles,
@@ -144,8 +144,8 @@ inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* n
     //double result[256];
     //int num[256];
     for(int x = index; x < index+SPECIES_512; x++){
-        num[x-index] = A*seed[x] + C;
-        seed[x] = (int) num[x-index] % M;
+        num[x-index] = A* (int )seed[x] + C;
+        seed[x] = num[x-index] % M;
         result[x-index] = fabs(seed[x]/((double) M));
     }
     _MMR_f64    xResult;
@@ -163,7 +163,7 @@ inline _MMR_f64 randu_vector(long int * seed, int index , double* result, int* n
 * @return a double representing random number generated using the Box-Muller algorithm
 * @see http://en.wikipedia.org/wiki/Normal_distribution, section computing value for normal random distribution
 */
-double randn(int *seed, int index) {
+double randn(double *seed, int index) {
     /*Box-Muller algorithm*/
     double u = randu(seed, index);
     double v = randu(seed, index);
@@ -173,7 +173,7 @@ double randn(int *seed, int index) {
 }
 
 #ifdef USE_RISCV_VECTOR
-inline _MMR_f64 randn_vector(long int * seed, int index ,double* randu_vector_result,int* randu_vector_num){
+inline _MMR_f64 randn_vector(double * seed, int index ,double* randu_vector_result,int* randu_vector_num){
     /*Box-Muller algorithm*/
     _MMR_f64    xU = randu_vector(seed,index,randu_vector_result,randu_vector_num);
     _MMR_f64    xV = randu_vector(seed,index,randu_vector_result,randu_vector_num);
@@ -207,7 +207,7 @@ inline _MMR_f64 randn_vector(long int * seed, int index ,double* randu_vector_re
 * @param dimZ The number of frames
 * @param seed The seed array
 */
-void addNoise(int *array3D, int *dimX, int *dimY, int *dimZ, int *seed) {
+void addNoise(int *array3D, int *dimX, int *dimY, int *dimZ, double *seed) {
     int x, y, z;
     for (x = 0; x < *dimX; x++) {
         for (y = 0; y < *dimY; y++) {
@@ -327,7 +327,7 @@ void getneighbors(int *se, int numOnes, double *neighbors, int radius) {
 * @param Nfr The number of frames of the video
 * @param seed The seed array used for number generation
 */
-void videoSequence(int *I, int IszX, int IszY, int Nfr, int *seed) {
+void videoSequence(int *I, int IszX, int IszY, int Nfr, double *seed) {
     int k;
     int max_size = IszX * IszY * Nfr;
     /*get object centers*/
@@ -456,7 +456,7 @@ int findIndexBin(double *CDF, int beginIndex, int endIndex, double value) {
 * @param seed The seed array used for random number generation
 * @param Nparticles The number of particles to be used
 */
-void particleFilter(int *I, int IszX, int IszY, int Nfr, int *seed, int Nparticles) {
+void particleFilter(int *I, int IszX, int IszY, int Nfr, double *seed, int Nparticles) {
 
     int max_size = IszX * IszY * Nfr;
     long long start = get_time();
@@ -644,7 +644,7 @@ void particleFilter(int *I, int IszX, int IszY, int Nfr, int *seed, int Nparticl
 }
 
 #ifdef USE_RISCV_VECTOR
-void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, long int * seed_64,double* randu_vector_result,int* randu_vector_num, int Nparticles){
+void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, double * seed,double* randu_vector_result,int* randu_vector_num, int Nparticles){
 
 
     int max_size = IszX*IszY*Nfr;
@@ -745,14 +745,14 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, int * seed, lon
         for(x = 0; x < limit; x=x+SPECIES_512){
 //            gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
             xArrayX = _MM_LOAD_f64(&arrayX[x]);
-            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num);
+            xAux = randn_vector(seed, x,randu_vector_result,randu_vector_num);
             xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(5.0));
             xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(1.0));
             xArrayX = _MM_ADD_f64(xAux, xArrayX);
             _MM_STORE_f64(&arrayX[x],xArrayX);
 
             xArrayY = _MM_LOAD_f64(&arrayY[x]);
-            xAux = randn_vector(seed_64, x,randu_vector_result,randu_vector_num);
+            xAux = randn_vector(seed, x,randu_vector_result,randu_vector_num);
             xAux =  _MM_MUL_f64(xAux, _MM_SET_f64(2.0));
             xAux =  _MM_ADD_f64(xAux, _MM_SET_f64(-2.0));
             xArrayY = _MM_ADD_f64(xAux, xArrayY);
@@ -1014,7 +1014,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     //establish seed
-    int *seed = (int *) malloc(sizeof(int) * Nparticles);
+    double *seed = (double *) malloc(sizeof(double) * Nparticles);
     int i;
     for (i = 0; i < Nparticles; i++) {
         seed[i] = i; //time(0)*i;
@@ -1034,11 +1034,11 @@ int main(int argc, char *argv[]) {
 #endif
 
 #ifdef USE_RISCV_VECTOR
-    long int * seed_64 = (long int *)malloc(sizeof(long int)*Nparticles);
-    for(i = 0; i < Nparticles; i++)
-    {
-        seed_64[i] = (long int)seed[i];
-    }
+//    long int * seed_64 = (long int *)malloc(sizeof(long int)*Nparticles);
+//    for(i = 0; i < Nparticles; i++)
+//    {
+//        seed_64[i] = (long int)seed[i];
+//    }
 #endif
 
     // Start instruction and cycles count of the region of interest
@@ -1048,7 +1048,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef USE_RISCV_VECTOR
     //call particle filter
-   particleFilter_vector(I, IszX, IszY, Nfr, seed,seed_64,randu_vector_result,randu_vector_num, Nparticles);
+   particleFilter_vector(I, IszX, IszY, Nfr, seed,randu_vector_result,randu_vector_num, Nparticles);
 #else
     //call particle filter
     particleFilter(I, IszX, IszY, Nfr, seed, Nparticles);
@@ -1068,7 +1068,7 @@ int main(int argc, char *argv[]) {
 
 
     for (i = 0; i < Nparticles; i++) {
-        printf("seed[%d] = %d\n", i, seed[i]);
+        printf("seed[%d] = %f\n", i, seed[i]);
 
     }
 #ifdef USE_RISCV_VECTOR
