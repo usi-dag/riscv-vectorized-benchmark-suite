@@ -32,51 +32,78 @@
 
   (this is the zlib license)
 */
+
+void print_num(_MMR_f64 var) {
+    double val[8];
+    memcpy(val, &var, sizeof(val));
+    printf("Numerical: %f %f %f %f %f %f %f %f \n",
+           val[0], val[1], val[2], val[3], val[4], val[5],
+           val[6], val[7]);
+}
+
+void print_num_int(_MMR_i64 var) {
+    int val[16];
+    memcpy(val, &var, sizeof(val));
+    printf("Numerical int: %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i \n",
+           val[0], val[1], val[2], val[3], val[4], val[5],
+           val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13],
+           val[14], val[15]);
+}
+
 inline _MMR_f64 __log_1xf64(_MMR_f64 x) {
 
-_MMR_i64   _x_i; 
-_MMR_i64   imm0;
-_MMR_f64  e;
-_MMR_MASK_i64 invalid_mask = _MM_VFLE_f64(x,_MM_SET_f64(0.0f));
+    _MMR_i64 _x_i;
+    _MMR_i64 imm0;
+    _MMR_f64 e;
+    _MMR_MASK_i64 invalid_mask = _MM_VFLE_f64(x, _MM_SET_f64(0.0f));
+    x = _MM_MAX_f64(x, (_MMR_f64) _MM_SET_i64(0x0010000000000000));  /* cut off denormalized stuff */
+    imm0 = _MM_SRL_i64((_MMR_i64) x, _MM_SET_i64(52));
+    /* keep only the fractional part */
+    _x_i = _MM_AND_i64((_MMR_i64) x, _MM_SET_i64(~0x7ff0000000000000));
+    _x_i = _MM_OR_i64(_x_i, (_MMR_i64) _MM_SET_f64(0.5f));
+    x = (_MMR_f64) _x_i;
+    imm0 = _MM_SUB_i64(imm0, _MM_SET_i64(1023)); // TODO if value negative then casting gives nan
+    printf("imm0 ");
+    print_num_int(imm0);
+//  e = _MM_VFCVT_F_X_f64(imm0); // TODO BUG returns all -nan
+//  e = (_MMR_f64) imm0;
+    int val[16];
+    memcpy(val, &imm0, sizeof(val));
+//    e = _mm512_set_pd(val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
+    e = _MM_LOAD_f64(&val);
+    printf("e ");
+    print_num(e);
+    e = _MM_ADD_f64(e, _MM_SET_f64(1.0f));
 
-  x = _MM_MAX_f64(x, (_MMR_f64)_MM_SET_i64(0x0010000000000000));  /* cut off denormalized stuff */
-  imm0 = _MM_SRL_i64((_MMR_i64)x, _MM_SET_i64(52));
-  /* keep only the fractional part */
-  _x_i = _MM_AND_i64((_MMR_i64)x, _MM_SET_i64(~0x7ff0000000000000));
-  _x_i = _MM_OR_i64(_x_i, (_MMR_i64)_MM_SET_f64(0.5f));
-  x= (_MMR_f64)_x_i;
-  imm0 = _MM_SUB_i64(imm0 ,_MM_SET_i64(1023) );
-  e = _MM_VFCVT_F_X_f64(imm0);
-  e = _MM_ADD_f64(e, _MM_SET_f64(1.0f) );
+    _MMR_MASK_i64 mask = _MM_VFLT_f64(x, _MM_SET_f64(0.707106781186547524));
+    _MMR_f64 tmp = _MM_MERGE_f64(mask, _MM_SET_f64(0.0f), x); // inverted position of mask
 
-_MMR_MASK_i64 mask = _MM_VFLT_f64(x, _MM_SET_f64(0.707106781186547524) );
-_MMR_f64 tmp  = _MM_MERGE_f64(mask, _MM_SET_f64(0.0f),x); // inverted position of mask
+    x = _MM_SUB_f64(x, _MM_SET_f64(1.0f));
+    e = _MM_SUB_f64(e, _MM_MERGE_f64(mask, _MM_SET_f64(0.0f), _MM_SET_f64(1.0f))); // inverted position of mask
+    x = _MM_ADD_f64(x, tmp);
 
-  x = _MM_SUB_f64(x, _MM_SET_f64(1.0f));
-  e = _MM_SUB_f64(e, _MM_MERGE_f64(mask, _MM_SET_f64(0.0f),_MM_SET_f64(1.0f))); // inverted position of mask
-  x = _MM_ADD_f64(x, tmp);
+    _MMR_f64 z = _MM_MUL_f64(x, x);
+    _MMR_f64 y;
 
-_MMR_f64 z = _MM_MUL_f64(x,x);
-_MMR_f64 y;
+    y = _MM_MADD_f64(_MM_SET_f64(7.0376836292E-2), x, _MM_SET_f64(-1.1514610310E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(1.1676998740E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(-1.2420140846E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(1.4249322787E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(-1.6668057665E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(2.0000714765E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(-2.4999993993E-1));
+    y = _MM_MADD_f64(y, x, _MM_SET_f64(3.3333331174E-1));
+    y = _MM_MUL_f64(y, z);
 
-  y = _MM_MADD_f64(_MM_SET_f64(7.0376836292E-2),x,_MM_SET_f64(-1.1514610310E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(1.1676998740E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(-1.2420140846E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(1.4249322787E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(-1.6668057665E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(2.0000714765E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(-2.4999993993E-1));
-  y = _MM_MADD_f64(y,x,_MM_SET_f64(3.3333331174E-1));
-  y = _MM_MUL_f64(y, z);
-  y = _MM_MACC_f64(y,e,_MM_SET_f64(-2.12194440e-4));
-  tmp = _MM_MUL_f64(z, _MM_SET_f64(0.5f));
-  y = _MM_SUB_f64(y, tmp);
-  tmp = _MM_MUL_f64(e, _MM_SET_f64(0.693359375));
-  x = _MM_ADD_f64(x, y);
-  x = _MM_ADD_f64(x, tmp);
-  x = _MM_MERGE_f64(invalid_mask, x,(_MMR_f64)_MM_SET_i64(0xffffffffffffffff));
+    y = _MM_MACC_f64(y, e, _MM_SET_f64(-2.12194440e-4));
+    tmp = _MM_MUL_f64(z, _MM_SET_f64(0.5f));
+    y = _MM_SUB_f64(y, tmp);
+    tmp = _MM_MUL_f64(e, _MM_SET_f64(0.693359375));
+    x = _MM_ADD_f64(x, y);
+    x = _MM_ADD_f64(x, tmp);
+    x = _MM_MERGE_f64(invalid_mask, x, (_MMR_f64) _MM_SET_i64(0xffffffffffffffff));
 
-  return x;
+    return x;
 }
 
 //inline _MMR_f32 __log_2xf32(_MMR_f32 x , unsigned long int gvl) {

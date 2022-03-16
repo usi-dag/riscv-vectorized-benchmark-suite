@@ -678,19 +678,19 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, double * seed,d
     double * weights = (double *)malloc(sizeof(double)*Nparticles);
     //#pragma omp parallel for shared(weights, Nparticles) private(x)
 
-    for(x = 0; x < Nparticles; x++){
-        weights[x] = 1/((double)(Nparticles));
-    }
+//    for(x = 0; x < Nparticles; x++){
+//        weights[x] = 1/((double)(Nparticles));
+//    }
 
     int limit = loop_bound(SPECIES_512, Nparticles);
-    printf("limit: %d (%d)\n", limit, Nparticles);
 //    unsigned long int gvl = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
 
     _MMR_f64    xweights = _MM_SET_f64(1.0/((double)(Nparticles)));
-    for(x = 0; x < Nparticles; x=x+SPECIES_512){
-//        gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
-//        _MM_STORE_f64(&weights[x],xweights);
-    }
+    x = 0;
+//    for(x < Nparticles; x=x+SPECIES_512){
+////        gvl     = __builtin_epi_vsetvl(Nparticles-x, __epi_e64, __epi_m1);
+//        _MM_STORE_f64(&weights[x],xweights); // TODO malloc malloc(): corrupted top size
+//    }
 
     for (; x < Nparticles; x++) {
          weights[x] = 1.0/(double)(Nparticles);
@@ -721,10 +721,15 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, double * seed,d
 //    gvl     = __builtin_epi_vsetvl(Nparticles, __epi_e64, __epi_m1);
     _MMR_f64    xArrayX = _MM_SET_f64(xe);
     _MMR_f64    xArrayY = _MM_SET_f64(ye);
-    for(int i = 0; i < limit; i=i+SPECIES_512){
+    for(x = 0; x < limit; x=x+SPECIES_512){
 //        gvl     = __builtin_epi_vsetvl(Nparticles-i, __epi_e64, __epi_m1);
-//        _MM_STORE_f64(&arrayX[i],xArrayX); // TODO malloc top allocation error (malloc but memory is not set before)
-//        _MM_STORE_f64(&arrayY[i],xArrayY);
+        _MM_STORE_f64(&arrayX[x],xArrayX);
+        _MM_STORE_f64(&arrayY[x],xArrayY);
+    }
+
+    for(; x < Nparticles; x++){
+        arrayX[x] = xe;
+        arrayY[x] = ye;
     }
 //    FENCE();
 
@@ -780,8 +785,8 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, double * seed,d
             // p(z|x). It is possible in this case. why? a hometask for you.
             //calc ind
             for(y = 0; y < countOnes; y++){
-                indX = roundDouble(arrayX[x]) + objxy[y*2 + 1];
-                indY = roundDouble(arrayY[x]) + objxy[y*2];
+                indX = (int) (roundDouble(arrayX[x]) + objxy[y*2 + 1]);
+                indY = (int) (roundDouble(arrayY[x]) + objxy[y*2]);
                 ind[x*countOnes + y] = fabs(indX*IszY*Nfr + indY*Nfr + k);
                 if(ind[x*countOnes + y] >= max_size)
                     ind[x*countOnes + y] = 0;
@@ -877,8 +882,8 @@ void particleFilter_vector(int * I, int IszX, int IszY, int Nfr, double * seed,d
                 xCDF = _MM_SET_f64(CDF[j]);
                 xComp = _MM_VFGE_f64(xComp, xCDF,xU);
                 xComp = _MM_VMXOR_i64(xComp,xMask);
-//                valid = _MM_VMFIRST_i64(xComp); // TODO how to get the first valid bit???
-                valid = -1;
+                valid = _MM_VMFIRST_i64(xComp, SPECIES_512); // TODO how to get the first valid bit???
+//                valid = -1;
                 for (int v = 0; v < SPECIES_512; v++) {
                     if (xComp !=0) {
                         valid = v;
@@ -1034,11 +1039,11 @@ int main(int argc, char *argv[]) {
 #endif
 
 #ifdef USE_RISCV_VECTOR
-//    long int * seed_64 = (long int *)malloc(sizeof(long int)*Nparticles);
-//    for(i = 0; i < Nparticles; i++)
-//    {
-//        seed_64[i] = (long int)seed[i];
-//    }
+    //    long int * seed_64 = (long int *)malloc(sizeof(long int)*Nparticles);
+    //    for(i = 0; i < Nparticles; i++)
+    //    {
+    //        seed_64[i] = (long int)seed[i];
+    //    }
 #endif
 
     // Start instruction and cycles count of the region of interest
@@ -1067,22 +1072,10 @@ int main(int argc, char *argv[]) {
     printf("-CSR   NUMBER OF INSTRUCTIONS EXECUTED :%lu\n", instr2 - instr1);
 
 
-    for (i = 0; i < Nparticles; i++) {
-        printf("seed[%d] = %f\n", i, seed[i]);
-
-    }
 #ifdef USE_RISCV_VECTOR
     free(randu_vector_result);
     free(randu_vector_num);
 #endif
-
-//    for (i = 0; i < Nparticles; i++) {
-//        printf("seed[%d] -> %d\n",i, seed[i]);
-//    }
-//
-//    for (i = 0; i < 50; i++) {
-//        printf("%d -> %d\n", i, I[i]);
-//    }
 
 
     free(seed);

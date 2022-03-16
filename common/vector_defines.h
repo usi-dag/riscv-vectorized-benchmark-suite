@@ -137,8 +137,8 @@ inline int loop_bound(int species_size, int length) {
 //TODO #define _MM_LOAD_STRIDE_f64 __builtin_epi_vload_strided_1xf64
 //TODO #define _MM_LOAD_STRIDE_f32 __builtin_epi_vload_strided_2xf32
 
-//#define _MM_STORE_f64   	__builtin_epi_vstore_1xf64
-#define _MM_STORE_f64   	_mm512_storeu_pd
+
+#define _MM_STORE_f64   	_mm512_storeu_pd // __builtin_epi_vstore_1xf64
 #define _MM_STORE_f32   	_mm512_storeu_ps
 
 //TODO #define _MM_STORE_INDEX_f64 __builtin_epi_vstore_indexed_1xf64
@@ -296,15 +296,29 @@ inline _MMR_f64 madd(_MMR_f64 c, _MMR_f64 a, _MMR_f64 b) {
 
 // OPERATIONS WITH MASKS
 
-//TODO #define _MM_VMFIRST_i64 	__builtin_epi_vmfirst_1xi1
+#define _MM_VMFIRST_i64 	firstTrue // __builtin_epi_vmfirst_1xi1
 //TODO #define _MM_VMFIRST_i32 	__builtin_epi_vmfirst_2xi1
+
+inline int firstTrue(_MMR_MASK_i64 mask, int dimension) {
+    int val[dimension];
+    memcpy(val, &mask, dimension);
+    for (int i = 0; i < dimension; i++) {
+        if (val[i] != 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
 
 #define _MM_VMPOPC_i64 		trueCount // __builtin_epi_vmpopc_1xi1
 
 inline int trueCount(_MMR_MASK_i64 a, int dimension) {
     int res = 0;
+    int val[dimension];
+    memcpy(val, &a, dimension);
     for (int i = 0; i < dimension; i++) {
-        // if (a[i] != 0) res++; // TODO how to access mask???
+         if (val[i] != 0) res++; // TODO how to access mask???
     }
 
     return res;
