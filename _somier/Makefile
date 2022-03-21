@@ -1,8 +1,8 @@
 
-CC=${LLVM}/bin/clang
-OBJDUMP=${LLVM}/bin/llvm-objdump
+CC=${GCC}/bin/gcc
+OBJDUMP=${GCC}/bin/llvm-objdump
 
-CFLAGS += --target=riscv64-unknown-elf  -march=rv64g -mepi -O2 -fno-vectorize
+CFLAGS += -march=native  -O3 -fno-tree-vectorize
 
 LDFLAGS = -lm -static
 IFLAGS = -I ./ -I ${VEHAVE_TOOLCHAIN}/include/vehave/ -I ${VEHAVE_TOOLCHAIN}/include/vehave-user/
@@ -24,13 +24,13 @@ main.seq.o: main.c utils.h
 	$(CC) $(CFLAGS) $(IFLAGS) -DSEQ -c -o $@ $<
 
 main.vec.o: main.c utils.h
-	$(CC) $(CFLAGS) $(IFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(IFLAGS) -mavx512f -c -o $@ $<
 
 somier.o: omp/somier.c utils.h
 	$(CC) $(CFLAGS) $(IFLAGS) -c -o $@ $<
 
 somier_intr_lmul1.o: intrinsics/somier_intr_lmul1.c intrinsics/somier_v.h utils.h
-	$(CC) $(CFLAGS) -DUSE_RISCV_VECTOR $(IFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -DUSE_RISCV_VECTOR -mavx512f $(IFLAGS) -c -o $@ $<
 
 utils.o: utils.c utils.h
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -39,7 +39,7 @@ forces.o: forces.c utils.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 forces_prevec_lmul1.o: intrinsics/forces_prevec_lmul1.c utils.h
-	$(CC) $(CFLAGS) -DUSE_RISCV_VECTOR $(IFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -DUSE_RISCV_VECTOR -mavx512f $(IFLAGS) -c -o $@ $<
 
 somier_serial.dump:
 	${OBJDUMP} --mattr=+m,+f,+d,+a,+c -ds  somier_serial.exe > somier_serial.dump

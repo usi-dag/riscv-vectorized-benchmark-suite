@@ -33,22 +33,22 @@
   (this is the zlib license)
 */
 
-void print_num(_MMR_f64 var) {
-    double val[8];
-    memcpy(val, &var, sizeof(val));
-    printf("Numerical: %f %f %f %f %f %f %f %f \n",
-           val[0], val[1], val[2], val[3], val[4], val[5],
-           val[6], val[7]);
-}
-
-void print_num_int(_MMR_i64 var) {
-    int val[16];
-    memcpy(val, &var, sizeof(val));
-    printf("Numerical int: %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i \n",
-           val[0], val[1], val[2], val[3], val[4], val[5],
-           val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13],
-           val[14], val[15]);
-}
+//void print_num(_MMR_f64 var) {
+//    double val[8];
+//    memcpy(val, &var, sizeof(val));
+//    printf("Numerical: %f %f %f %f %f %f %f %f \n",
+//           val[0], val[1], val[2], val[3], val[4], val[5],
+//           val[6], val[7]);
+//}
+//
+//void print_num_int(_MMR_i64 var) {
+//    int val[16];
+//    memcpy(val, &var, sizeof(val));
+//    printf("Numerical int: %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i \n",
+//           val[0], val[1], val[2], val[3], val[4], val[5],
+//           val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13],
+//           val[14], val[15]);
+//}
 
 inline _MMR_f64 __log_1xf64(_MMR_f64 x) {
 
@@ -63,16 +63,16 @@ inline _MMR_f64 __log_1xf64(_MMR_f64 x) {
     _x_i = _MM_OR_i64(_x_i, (_MMR_i64) _MM_SET_f64(0.5f));
     x = (_MMR_f64) _x_i;
     imm0 = _MM_SUB_i64(imm0, _MM_SET_i64(1023)); // TODO if value negative then casting gives nan
-    printf("imm0 ");
-    print_num_int(imm0);
+//    printf("imm0 ");
+//    print_num_int(imm0);
 //  e = _MM_VFCVT_F_X_f64(imm0); // TODO BUG returns all -nan
 //  e = (_MMR_f64) imm0;
     int val[16];
     memcpy(val, &imm0, sizeof(val));
 //    e = _mm512_set_pd(val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
     e = _MM_LOAD_f64(&val);
-    printf("e ");
-    print_num(e);
+//    printf("e ");
+//    print_num(e);
     e = _MM_ADD_f64(e, _MM_SET_f64(1.0f));
 
     _MMR_MASK_i64 mask = _MM_VFLT_f64(x, _MM_SET_f64(0.707106781186547524));

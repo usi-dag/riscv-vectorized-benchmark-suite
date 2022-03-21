@@ -164,7 +164,7 @@ inline int loop_bound(int species_size, int length) {
 #define _MM_ADD_f64_MASK  _mm512_mask_add_pd
 //TODO #define _MM_ADD_f32_MASK  __builtin_epi_vfadd_2xf32_mask
 
-//TODO #define _MM_DIV_f64     	__builtin_epi_vfdiv_1xf64
+#define _MM_DIV_f64     	_mm512_div_pd // __builtin_epi_vfdiv_1xf64
 #define _MM_DIV_f32     	_mm512_div_ps
 
 //TODO #define _MM_DIV_2xf64		__builtin_epi_vfdiv_2xf64
@@ -318,7 +318,7 @@ inline int trueCount(_MMR_MASK_i64 a, int dimension) {
     int val[dimension];
     memcpy(val, &a, dimension);
     for (int i = 0; i < dimension; i++) {
-         if (val[i] != 0) res++; // TODO how to access mask???
+         if (val[i] != 0) res++;
     }
 
     return res;
