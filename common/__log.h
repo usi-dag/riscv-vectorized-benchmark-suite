@@ -2,6 +2,8 @@
 // RISC-V VECTOR LOG FUNCTION Version by Cristóbal Ramírez Lazo, "Barcelona 2019"
 // This RISC-V Vector implementation is based on the original code presented by Julien Pommier
 
+#include <cstring>
+
 /* 
    AVX implementation of sin, cos, sincos, exp and log
 
@@ -50,6 +52,18 @@
 //           val[14], val[15]);
 //}
 
+inline _MMR_f64 __log_1x64_scalar(_MMR_f64 x) {
+    double val[SPECIES_512];
+    memcpy(val, &x, sizeof(val));
+
+    for (int i = 0; i < SPECIES_512; ++i) {
+        val[i] = log(val[i]);
+    }
+    return _mm512_set_pd(val[7], val[6], val[5], val[4], val[3], val[2], val[1], val[0]);
+
+}
+
+// TODO bug version with casting
 inline _MMR_f64 __log_1xf64(_MMR_f64 x) {
 
     _MMR_i64 _x_i;

@@ -18,24 +18,24 @@
 #include "HJM_type.h"
 
 
-FTYPE RanUnif( long *s );
-void RanUnif_vector( long *s , int iFactors , int iN ,int  BLOCKSIZE, FTYPE **randZ);
+FTYPE RanUnif(long *s);
 
-FTYPE RanUnif( long *s )
-{
-  // uniform random number generator
+void RanUnif_vector(long *s, int iFactors, int iN, int BLOCKSIZE, FTYPE **randZ);
 
-  long   ix, k1;
-  FTYPE dRes;
-  
-  ix = *s;
-  k1 = ix/127773L;
-  ix = 16807L*( ix - k1*127773L ) - k1 * 2836L;
-  if (ix < 0) ix = ix + 2147483647L;
-  *s   = ix;
-  dRes = (ix * 4.656612875e-10);
-  return (dRes);
-  
+FTYPE RanUnif(long *s) {
+    // uniform random number generator
+
+    long ix, k1;
+    FTYPE dRes;
+
+    ix = *s;
+    k1 = ix / 127773L;
+    ix = 16807L * (ix - k1 * 127773L) - k1 * 2836L;
+    if (ix < 0) ix = ix + 2147483647L;
+    *s = ix;
+    dRes = (ix * 4.656612875e-10);
+    return (dRes);
+
 } // end of RanUnif
 
 #ifdef USE_RISCV_VECTOR
@@ -43,30 +43,33 @@ FTYPE RanUnif( long *s )
 void RanUnif_vector( long *s , int iFactors , int iN ,int  BLOCKSIZE , FTYPE **randZ )
 {
   // uniform random number generator
-  unsigned long int gvl = __builtin_epi_vsetvl(BLOCKSIZE, __epi_e64, __epi_m1);
-
-  _MMR_i64    k1;
-  _MMR_i64      zero;
+//  unsigned long int gvl = __builtin_epi_vsetvl(BLOCKSIZE, __epi_e64, __epi_m1);
+    int limit  = loop_bound(SPECIES_512, BLOCKSIZE);
+  _MMR_f64    k1;
+  _MMR_f64      zero;
   _MMR_MASK_i64   mask1;
   _MMR_f64    dRes;
 
-  _MMR_i64    cons1     = _MM_SET_i64(127773,gvl);
-  _MMR_i64    cons2     = _MM_SET_i64(16807,gvl);
-  _MMR_i64    cons3     = _MM_SET_i64(2836,gvl);  
-  _MMR_i64    cons4     = _MM_SET_i64(2147483647,gvl);
-  _MMR_f64    cons5     = _MM_SET_f64(4.656612875E-10,gvl);
-  _MMR_i64    xSeed       = _MM_LOAD_i64(s,gvl);
+  _MMR_f64    cons1     = _MM_SET_f64(127773);
+  _MMR_f64    cons2     = _MM_SET_f64(16807);
+  _MMR_f64    cons3     = _MM_SET_f64(2836);
+  _MMR_f64    cons4     = _MM_SET_f64(2147483647);
+  _MMR_f64    cons5     = _MM_SET_f64(4.656612875E-10);
+  _MMR_f64    xSeed     = _MM_LOAD_f64(s);
 
   for (int l=0;l<=iFactors-1;++l){
     for (int j=1;j<=iN-1;++j){
-          k1    = _MM_DIV_i64(xSeed,cons1,gvl);
-          xSeed   = _MM_SUB_i64(_MM_MUL_i64(cons2,_MM_SUB_i64(xSeed,_MM_MUL_i64(k1,cons1,gvl),gvl),gvl), _MM_MUL_i64(k1,cons3,gvl) , gvl);
-          zero    = _MM_SET_i64(0,gvl);
-          mask1   = _MM_VMSLT_i64(xSeed,zero,gvl); 
-          xSeed     = _MM_ADD_i64_MASK(xSeed,xSeed,cons4,mask1,gvl);
-          dRes    = _MM_MUL_f64( cons5,_MM_VFCVT_F_X_f64(xSeed,gvl),gvl);
+        for (int b = 0; b < limit; b+=SPECIES_512) {
+            k1    = _MM_DIV_f64(xSeed,cons1);
+            xSeed   = _MM_SUB_f64(_MM_MUL_f64(cons2,_MM_SUB_f64(xSeed,_MM_MUL_f64(k1,cons1))), _MM_MUL_f64(k1,cons3));
+            zero    = _MM_SET_f64(0);
+            mask1   = _MM_VFLE_f64(xSeed,zero);
+            xSeed     = _MM_ADD_f64_MASK(xSeed,mask1,xSeed, cons4);
+            dRes    = _MM_MUL_f64( cons5,xSeed);
 
-          _MM_STORE_f64(&randZ[l][BLOCKSIZE*j], dRes,gvl);
+            _MM_STORE_f64(&randZ[l][BLOCKSIZE*j+b], dRes);
+        }
+
       }
   }
 }

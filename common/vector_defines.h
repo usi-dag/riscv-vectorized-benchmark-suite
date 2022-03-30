@@ -4,6 +4,9 @@
 #include <math.h>
 #include <immintrin.h>
 #include <x86intrin.h>
+#include <string.h>
+
+
 #define _MM_ALIGN64 __attribute__((aligned (64)))
 
 #define MUSTINLINE __attribute__((always_inline))
@@ -40,7 +43,7 @@ inline int loop_bound(int species_size, int length) {
 //---------------------------------------------------------------------------
 // INTEGER INTRINSICS
 
-//TODO #define _MM_LOAD_i64    	__builtin_epi_vload_1xi64
+#define _MM_LOAD_i64    	_mm512_loadu_si512 //__builtin_epi_vload_1xi64
 #define _MM_LOAD_i32    	_mm512_loadu_si512
 //TODO #define _MM_LOAD_i16        __builtin_epi_vload_4xi16
 //TODO #define _MM_LOAD_i8        __builtin_epi_vload_8xi8
@@ -68,15 +71,15 @@ inline int loop_bound(int species_size, int length) {
 #define _MM_SUB_i64			  _mm512_sub_epi64 // __builtin_epi_vsub_1xi64
 #define _MM_SUB_i32			  _mm512_add_epi32
 
-//TODO #define _MM_ADD_i64_MASK  __builtin_epi_vadd_1xi64_mask
+#define _MM_ADD_i64_MASK  // _mm512_mask_add_pd __builtin_epi_vadd_1xi64_mask
 //TODO #define _MM_ADD_i32_MASK  __builtin_epi_vadd_2xi32_mask
 
-//TODO #define _MM_MUL_i64       __builtin_epi_vmul_1xi64
+// #define _MM_MUL_i64       _mm512_mullo_epi64 // __builtin_epi_vmul_1xi64 // TODO no mul for epi64
 //TODO #define _MM_MUL_i32       __builtin_epi_vmul_2xi32
 //TODO #define _MM_MUL_i16       __builtin_epi_vmul_4xi16
 //TODO #define _MM_MUL_i8       __builtin_epi_vmul_8xi8
 
-//TODO #define _MM_DIV_i64       __builtin_epi_vdiv_1xi64
+// #define _MM_DIV_i64       _mm512_div_epi64 // __builtin_epi_vdiv_1xi64
 //TODO #define _MM_DIV_i32       __builtin_epi_vdiv_2xi32
 
 //TODO #define _MM_REM_i64       __builtin_epi_vrem_1xi64
@@ -92,7 +95,7 @@ inline int loop_bound(int species_size, int length) {
 //TODO #define _MM_MAX_i32         __builtin_epi_vmax_2xi32
 
 #define _MM_SLL_i64     	_mm512_sllv_epi64 // __builtin_epi_vsll_1xi64
- #define _MM_SLL_i32     	_mm512_sllv_epi32
+#define _MM_SLL_i32     	_mm512_sllv_epi32
 
 #define _MM_SRL_i64     	_mm512_srav_epi64 // __builtin_epi_vsrl_1xi64
 //TODO #define _MM_SRL_i32     	__builtin_epi_vsrl_2xi32
@@ -158,7 +161,7 @@ inline int loop_bound(int species_size, int length) {
 #define _MM_SUB_f64     	_mm512_sub_pd // __builtin_epi_vfsub_1xf64
 #define _MM_SUB_f32     	_mm512_sub_ps
 
-//TODO #define _MM_SUB_f64_MASK	__builtin_epi_vfsub_1xf64_mask
+#define _MM_SUB_f64_MASK	_mm512_mask_sub_pd // __builtin_epi_vfsub_1xf64_mask
 #define _MM_SUB_f32_MASK	_mm512_mask_sub_ps
 
 #define _MM_ADD_f64_MASK  _mm512_mask_add_pd
@@ -176,7 +179,7 @@ inline int loop_bound(int species_size, int length) {
 #define _MM_SET_f64     	_mm512_set1_pd // __builtin_epi_vbroadcast_1xf64
 #define _MM_SET_f32     	_mm512_set1_ps
 
-//TODO define _MM_MIN_f64         __builtin_epi_vfmin_1xf64
+#define _MM_MIN_f64         _mm512_min_pd // __builtin_epi_vfmin_1xf64
 #define _MM_MIN_f32         _mm512_min_ps
 
 #define _MM_MAX_f64         _mm512_max_pd
@@ -185,16 +188,21 @@ inline int loop_bound(int species_size, int length) {
 //TODO #define _MM_VFSGNJ_f64      __builtin_epi_vfsgnj_1xf64
 //TODO #define _MM_VFSGNJ_f32      __builtin_epi_vfsgnj_2xf32
 
-//TODO #define _MM_VFSGNJN_f64     __builtin_epi_vfsgnjn_1xf64
+// TODO search if there is a better option
+#define _MM_VFSGNJN_f64     _mm512_neg_pd // __builtin_epi_vfsgnjn_1xf64 // negate array
 #define _MM_VFSGNJN_f32     _mm512_fnmadd_ps
 
-//TODO #define _MM_VFSGNJX_f64     __builtin_epi_vfsgnjx_1xf64
+inline _MMR_f64  _mm512_neg_pd(_MMR_f64 a) {
+    return _mm512_fnmadd_pd(a, _MM_SET_f64(1.0), _MM_SET_f64(0.0));
+}
+
+#define _MM_VFSGNJX_f64    _mm512_abs_pd // __builtin_epi_vfsgnjx_1xf64
 #define _MM_VFSGNJX_f32 	_mm512_abs_ps
 
 #define _MM_MERGE_f64  		_mm512_mask_blend_pd // __builtin_epi_vfmerge_1xf64
 #define _MM_MERGE_f32 		_mm512_mask_blend_ps
 
-//TODO #define _MM_REDSUM_f64  	__builtin_epi_vfredsum_1xf64
+#define _MM_REDSUM_f64  	_mm512_reduce_add_pd // __builtin_epi_vfredsum_1xf64
 //TODO #define _MM_REDSUM_f32  	__builtin_epi_vfredsum_2xf32
 
 //TODO #define _MM_REDSUM_f64_MASK __builtin_epi_vfredsum_1xf64_mask
@@ -344,11 +352,15 @@ inline int trueCount(_MMR_MASK_i64 a, int dimension) {
 
 // Int
 
-//TODO #define _MM_VMSLT_i64     __builtin_epi_vmslt_1xi64
+#define _MM_VMSLT_i64     _mm512_lt_epi64_mask // __builtin_epi_vmslt_1xi64
 //TODO #define _MM_VMSLT_i32     __builtin_epi_vmslt_2xi32
 
 #define _MM_VMSEQ_i64		_mm512_eq_epi64_mask // __builtin_epi_vmseq_1xi64
 #define _MM_VMSEQ_i32		_mm512_cmp_epi32_mask
+
+inline _MMR_MASK_i64 _mm512_lt_epi64_mask(_MMR_i64 a, _MMR_i64 b) {
+    return _mm512_cmp_epi64_mask(a, b, _CMP_LT_OQ);
+}
 
 inline _MMR_MASK_i64 _mm512_eq_epi64_mask(_MMR_i64 a, _MMR_i64 b) {
     return _mm512_cmp_epi64_mask(a, b, _CMP_EQ_OQ);
@@ -359,20 +371,25 @@ inline _MMR_MASK_i64 _mm512_eq_epi64_mask(_MMR_i64 a, _MMR_i64 b) {
 #define _MM_VFEQ_f32        _mm512_mask_eq_ps_mask
 
 
-//TODO #define _MM_VFGT_f64        __builtin_epi_vmfgt_1xf64
+#define _MM_VFGT_f64        _mm512_gt_pd_mask // __builtin_epi_vmfgt_1xf64
 //TODO #define _MM_VFGT_f32        __builtin_epi_vmfgt_2xf32
 
 #define _MM_VFGE_f64        _mm512_mask_ge_pd_mask
 //TODO #define _MM_VFGE_f32        __builtin_epi_vmfge_2xf32
 
-#define _MM_VFLT_f64        _mm512_mask_lt_pd_mask // __builtin_epi_vmflt_1xf64
+#define _MM_VFLT_f64        _mm512_lt_pd_mask // __builtin_epi_vmflt_1xf64
 #define _MM_VFLT_f32        _mm512_mask_lt_ps_mask // __mmask16 k1, __m512 a, __m512 b, const int imm8
+
+
+inline _MMR_MASK_i64 _mm512_gt_pd_mask(_MMR_f64 a, _MMR_f64 b) {
+    return _mm512_cmp_pd_mask(a, b, _CMP_GT_OS);
+}
 
 inline _MMR_MASK_i64 _mm512_mask_ge_pd_mask(_MMR_MASK_i64 mask, _MMR_f64 a, _MMR_f64 b) {
     return _mm512_mask_cmp_pd_mask(mask, a, b, _CMP_GE_OS);
 }
 
-inline _MMR_MASK_i32 _mm512_mask_lt_pd_mask(_MMR_f64 a, _MMR_f64 b) {
+inline _MMR_MASK_i32 _mm512_lt_pd_mask(_MMR_f64 a, _MMR_f64 b) {
     return _mm512_cmp_pd_mask(a, b, _CMP_LT_OS);
 }
 
@@ -401,14 +418,14 @@ inline _MMR_MASK_i64 _mm512_mask_le_pd_mask(_MMR_f64 a, _MMR_f64 b) {
 #ifndef _MM_LOG
 #define _MM_LOG
 #include "__log.h"
-#define _MM_LOG_f64 		__log_1xf64 // _mm512_log_pd
+#define _MM_LOG_f64 		__log_1x64_scalar // __log_1xf64 // _mm512_log_pd
 #define _MM_LOG_f32 		_mm512_log_ps
 #endif
 
 #ifndef _MM_EXP
 #define _MM_EXP
 #include "__exp.h"
-//TODO #define _MM_EXP_f64 		__exp_1xf64
+#define _MM_EXP_f64 __exp_1xf64
 #define _MM_EXP_f32 __exp_2xf32		// _mm512_exp_ps only for intel compiler
 #endif
 

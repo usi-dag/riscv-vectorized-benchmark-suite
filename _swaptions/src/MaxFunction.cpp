@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "HJM_type.h"
 
-FTYPE dMax( FTYPE dA, FTYPE dB );
+
 
 FTYPE dMax( FTYPE dA, FTYPE dB )
 {

@@ -11,7 +11,7 @@ FTYPE RanUnif( long *s );
 void RanUnif_vector( long *s , int iFactors , int iN ,int  BLOCKSIZE, FTYPE **randZ);
 
 FTYPE CumNormalInv( FTYPE u );
-void CumNormalInv_vector( FTYPE* u ,FTYPE* output ,unsigned long int gvl);
+void CumNormalInv_vector( FTYPE* u ,FTYPE* output);
 
 void icdf_SSE(const int N, FTYPE *in, FTYPE *out);
 void icdf_baseline(const int N, FTYPE *in, FTYPE *out);
@@ -31,6 +31,16 @@ int Discount_Factors_Blocking(FTYPE *pdDiscountFactors, int iN, FTYPE dYears, FT
 int Discount_Factors_Blocking_vector(FTYPE *pdDiscountFactors, int iN, FTYPE dYears, FTYPE *pdRatePath, int BLOCKSIZE);
 int Discount_Factors_Blocking_SSE(FTYPE *pdDiscountFactors, int iN, FTYPE dYears, FTYPE *pdRatePath, int BLOCKSIZE);
 
+int HJM_SimPath_Yield(FTYPE **ppdHJMPath, int iN, int iFactors, FTYPE dYears, FTYPE *pdYield, FTYPE **ppdFactors,
+                      long *lRndSeed);
+int HJM_SimPath_Forward(FTYPE **ppdHJMPath, int iN, int iFactors, FTYPE dYears, FTYPE *pdForward, FTYPE *pdTotalDrift,
+                        FTYPE **ppdFactors, long *lRndSeed);
+int HJM_Yield_to_Forward(FTYPE *pdForward, int iN, FTYPE *pdYield);
+int HJM_Factors(FTYPE **ppdFactors,int iN, int iFactors, FTYPE *pdVol, FTYPE **ppdFacBreak);
+int HJM_Drifts(FTYPE *pdTotalDrift, FTYPE **ppdDrifts, int iN, int iFactors, FTYPE dYears, FTYPE **ppdFactors);
+int HJM_Correlations(FTYPE **ppdHJMCorr, int iN, int iFactors, FTYPE **ppdFactors);
+int HJM_Forward_to_Yield(FTYPE *pdYield, int iN, FTYPE *pdForward);
+int Discount_Factors(FTYPE *pdDiscountFactors, int iN, FTYPE dYears, FTYPE *pdRatePath);
 
 int HJM_Swaption_Blocking_SSE(FTYPE *pdSwaptionPrice, //Output vector that will store simulation results in the form:
 			                              //Swaption Price
