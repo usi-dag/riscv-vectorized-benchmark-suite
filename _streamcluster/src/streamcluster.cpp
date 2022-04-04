@@ -667,24 +667,30 @@ float dist(Point p1, Point p2, int dim )
 #ifdef USE_RISCV_VECTOR
   float result=0.0;
   int i;
-  unsigned long int gvl = __builtin_epi_vsetvl(dim, __epi_e32, __epi_m1);
-
+//  unsigned long int gvl = __builtin_epi_vsetvl(dim, __epi_e32, __epi_m1);
+    int limit = loop_bound(INT32_SPECIES_512, dim);
  _MMR_f32 result1,result2, _aux, _diff, _coord1, _coord2;
 
-  result1 = _MM_SET_f32(0.0,gvl);
-  result2 = _MM_SET_f32(0.0,gvl);
-  for (i=0;i<dim;i=i+gvl) {  
+  result1 = _MM_SET_f32(0.0);
+  result2 = _MM_SET_f32(0.0);
+  for (i=0;i<limit;i=i+INT32_SPECIES_512) {
 
-    gvl = __builtin_epi_vsetvl(dim-i, __epi_e32, __epi_m1);
+//    gvl = __builtin_epi_vsetvl(dim-i, __epi_e32, __epi_m1);
 
-    _coord1 = _MM_LOAD_f32(&(p1.coord[i]),gvl);
-    _coord2 = _MM_LOAD_f32(&(p2.coord[i]),gvl);
+    _coord1 = _MM_LOAD_f32(&(p1.coord[i]));
+    _coord2 = _MM_LOAD_f32(&(p2.coord[i]));
 
-    _diff = _MM_SUB_f32(_coord2,_coord1,gvl);
-    result1   = _MM_MACC_f32(result1,_diff,_diff,gvl);
+    _diff = _MM_SUB_f32(_coord2,_coord1);
+    result1   = _MM_MACC_f32(_diff,_diff, result1);
   }
-  result2 = _MM_REDSUM_f32(result1,result2,gvl);
-  result = _MM_VGETFIRST_f32(result2);
+//  result2 = _MM_REDSUM_f32(result1,result2,gvl);
+//  result = _MM_VGETFIRST_f32(result2);
+
+    result = _MM_REDSUM_f32(result1);
+
+  for (;i<dim;i++)
+    result += (p1.coord[i] - p2.coord[i])*(p1.coord[i] - p2.coord[i]);
+
   //FENCE();
   //printf("result = %f \n",result);
   return result;
@@ -809,6 +815,7 @@ float pspeedy(Points *points, float z, long *kcenter, int pid, pthread_barrier_t
   }
   else  { // I am the master thread. I decide whether to open a center and notify others if so. 
     for(i = 1; i < points->num; i++ )  {
+//        printf("%f\n", z);
       bool to_open = ((float)lrand48()/(float)INT_MAX)<(points->p[i].cost/z);
       if( to_open )  {
   (*kcenter)++;
@@ -897,6 +904,7 @@ float pspeedy(Points *points, float z, long *kcenter, int pid, pthread_barrier_t
 #ifdef TBB_VERSION
 double pgain(long x, Points *points, double z, long int *numcenters)
 {
+
   int i;
   int number_of_centers_to_close = 0;
 
@@ -1001,7 +1009,6 @@ double pgain(long x, Points *points, double z, long int *numcenters, int pid, pt
 #ifdef ENABLE_THREADS
   pthread_barrier_wait(barrier);
 #endif
-
   //my block
   long bsize = points->num/nproc;
   long k1 = bsize * pid;
@@ -1553,8 +1560,7 @@ float pkmedian(Points *points, long kmin, long kmax, long* kfinal,
 
   double myhiz = 0;
   for (long kk=k1;kk < k2; kk++ ) {
-    myhiz += dist(points->p[kk], points->p[0],
-          ptDimension )*points->p[kk].weight;
+    myhiz += dist(points->p[kk], points->p[0],ptDimension ) * points->p[kk].weight;
   }
   hizs[pid] = myhiz;
 
@@ -1609,7 +1615,7 @@ float pkmedian(Points *points, long kmin, long kmax, long* kfinal,
     {
       numfeasible = selectfeasible_fast(points,&feasible,kmin,pid,barrier);
       for( int i = 0; i< points->num; i++ ) {
-  is_center[points->p[i].assign]= true;
+          is_center[points->p[i].assign]= true;
       }
     }
 
@@ -1812,7 +1818,7 @@ public:
     size_t count = 0;
     for( int i = 0; i < num && n > 0; i++ ) {
       for( int k = 0; k < dim; k++ ) {
-  dest[i*dim + k] = lrand48()/(float)INT_MAX;
+  dest[i*dim + k] = lrand48() /(float)INT_MAX;
       }
       n--;
       count++;
@@ -1870,12 +1876,16 @@ void outcenterIDs( Points* centers, long* centerIDs, char* outfile ) {
 
   for( int i = 0; i < centers->num; i++ ) {
     if( is_a_median[i] ) {
-      fprintf(fp, "%u\n", centerIDs[i]);
+      fprintf(fp, "%ld\n", centerIDs[i]);
+      printf("%ld\n", centerIDs[i]);
       fprintf(fp, "%lf\n", centers->p[i].weight);
+      printf("%lf\n", centers->p[i].weight);
       for( int k = 0; k < centers->dim; k++ ) {
-  fprintf(fp, "%lf ", centers->p[i].coord[k]);
+        fprintf(fp, "%lf ", centers->p[i].coord[k]);
+        printf( "%lf ", centers->p[i].coord[k]);
       }
-      fprintf(fp,"\n\n");
+        fprintf(fp,"\n\n");
+        printf("\n\n");
     }
   }
   fclose(fp);
@@ -1935,7 +1945,7 @@ void streamCluster( PStream* stream,
   while(1) {
 
     size_t numRead  = stream->read(block, dim, chunksize ); 
-    fprintf(stderr,"read %d points\n",numRead);
+    fprintf(stderr,"read %ld points\n",numRead);
 
     if( stream->ferror() || numRead < (unsigned int)chunksize && !stream->feof() ) {
       fprintf(stderr, "error reading data!\n");
@@ -2060,9 +2070,8 @@ int main(int argc, char **argv)
   tbb::task_scheduler_init init(nproc);
 #endif
 
-
   srand48(SEED);
-  PStream* stream;
+    PStream* stream;
   if( n > 0 ) {
     stream = new SimStream(n);
   }

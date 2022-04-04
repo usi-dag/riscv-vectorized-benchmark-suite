@@ -203,7 +203,7 @@ inline _MMR_f64  _mm512_neg_pd(_MMR_f64 a) {
 #define _MM_MERGE_f32 		_mm512_mask_blend_ps
 
 #define _MM_REDSUM_f64  	_mm512_reduce_add_pd // __builtin_epi_vfredsum_1xf64
-//TODO #define _MM_REDSUM_f32  	__builtin_epi_vfredsum_2xf32
+#define _MM_REDSUM_f32  	_mm512_reduce_add_ps // __builtin_epi_vfredsum_2xf32
 
 //TODO #define _MM_REDSUM_f64_MASK __builtin_epi_vfredsum_1xf64_mask
 //TODO #define _MM_REDSUM_f32_MASK __builtin_epi_vfredsum_2xf32_mask
@@ -218,7 +218,7 @@ inline _MMR_f64 madd(_MMR_f64 c, _MMR_f64 a, _MMR_f64 b) {
     return _MM_ADD_f64(c, _MM_MUL_f64(a, b));
 }
 
-#define _MM_MACC_f32  		_mm512_fmadd_ps
+#define _MM_MACC_f32  		_mm512_fmadd_ps // first param c in riscv is last in intel intrinsic (c, a, b) -> (a, b, c)
 
 #define _MM_MADD_f64  		_mm512_fmadd_pd // __builtin_epi_vfmadd_1xf64
 #define _MM_MADD_f32  		_mm512_fmadd_ps

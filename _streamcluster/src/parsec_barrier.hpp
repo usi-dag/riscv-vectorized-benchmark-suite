@@ -11,8 +11,8 @@
 
 
 
-//This code functions as a drop-in replacement for pthread barriers.
-//Read the documentation for the corresponding pthread_barrier* calls
+//This code functions as a replacement for pthread barriers.
+////Read the documentation for the c drop-inorresponding pthread_barrier* calls
 //to understand how this code is used (not all pthread features are implemented)
 
 //If defined then macros will be used to redefine the relevant pthread_barrier*
