@@ -190,10 +190,14 @@ inline int loop_bound(int species_size, int length) {
 
 // TODO search if there is a better option
 #define _MM_VFSGNJN_f64     _mm512_neg_pd // __builtin_epi_vfsgnjn_1xf64 // negate array
-#define _MM_VFSGNJN_f32     _mm512_fnmadd_ps
+#define _MM_VFSGNJN_f32     _mm512_neg_ps //_mm512_fnmadd_ps
 
 inline _MMR_f64  _mm512_neg_pd(_MMR_f64 a) {
     return _mm512_fnmadd_pd(a, _MM_SET_f64(1.0), _MM_SET_f64(0.0));
+}
+
+inline _MMR_f32  _mm512_neg_ps(_MMR_f32 a) {
+    return _mm512_fnmadd_ps(a, _MM_SET_f32(1), _MM_SET_f32(0));
 }
 
 #define _MM_VFSGNJX_f64    _mm512_abs_pd // __builtin_epi_vfsgnjx_1xf64
@@ -426,7 +430,7 @@ inline _MMR_MASK_i64 _mm512_mask_le_pd_mask(_MMR_f64 a, _MMR_f64 b) {
 #define _MM_EXP
 #include "__exp.h"
 #define _MM_EXP_f64 __exp_1xf64
-#define _MM_EXP_f32 __exp_2xf32		// _mm512_exp_ps only for intel compiler
+#define _MM_EXP_f32 __exp_2x32_scalar // __exp_2xf32		// _mm512_exp_ps only for intel compiler // TODO bug in vector version
 #endif
 
 #ifndef _MM_COS

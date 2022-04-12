@@ -11,8 +11,11 @@ override OUTPUT = -DOUTPUT
 endif
 
 #C_C = gcc
-C_C = ${LLVM}/bin/clang
-FLAGS = --target=riscv64-unknown-elf  -march=rv64g -mepi -O3 -fno-vectorize
+#C_C = ${LLVM}/bin/clang
+C_C = ${GCC}/bin/gcc
+#FLAGS = --target=riscv64-unknown-elf  -march=rv64g -mepi -O3 -fno-vectorize
+FLAGS = -march=native  -O3 -fno-tree-vectorize
+VECTOR = -mavx512f -DUSE_RISCV_VECTOR
 
 dump = ${LLVM}/bin/llvm-objdump
 OMP_LIB = #-lgomp
@@ -23,13 +26,13 @@ start:
 
 serial: main_serial.o ./kernel/kernel_cpu.o ./util/num/num.o ./util/timer/timer.o
 	$(C_C) $(FLAGS) main.o ./kernel/kernel_cpu.o ./util/num/num.o ./util/timer/timer.o -lm -o bin/lavaMD_serial.exe ; \
-	$(dump) --mattr=+m,+f,+d,+a,+c -ds  bin/lavaMD_serial.exe > bin/lavaMD_serial.dump ; \
+#	$(dump) --mattr=+m,+f,+d,+a,+c -ds  bin/lavaMD_serial.exe > bin/lavaMD_serial.dump ; \
 	rm *.o ; \
 	rm kernel/*.o ;
 
 vector: main_vector.o ./kernel/kernel_vector.o ./util/num/num.o ./util/timer/timer.o
-	$(C_C) $(FLAGS) -DUSE_RISCV_VECTOR main.o ./kernel/kernel_vector.o ./util/num/num.o ./util/timer/timer.o -lm -o bin/lavaMD_vector.exe ; \
-	$(dump) --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/lavaMD_vector.exe > bin/lavaMD_vector.dump ; \
+	$(C_C) $(FLAGS) $(VECTOR)  main.o ./kernel/kernel_vector.o ./util/num/num.o ./util/timer/timer.o -lm -o bin/lavaMD_vector.exe ; \
+#	$(dump) --mattr=+m,+f,+d,+a,+c,+experimental-v -ds  bin/lavaMD_vector.exe > bin/lavaMD_vector.dump ; \
 	rm *.o ; \
 	rm kernel/*.o ;
 
@@ -47,7 +50,7 @@ main_serial.o:	main.h \
 			-o main.o \
 
 main_vector.o:
-	$(C_C) $(FLAGS) -DUSE_RISCV_VECTOR ${OUTPUT} main.c -c -o main.o
+	$(C_C) $(FLAGS) $(VECTOR) ${OUTPUT} main.c -c -o main.o
 
 ./kernel/kernel_cpu.o:	./kernel/kernel_cpu.h \
 						./kernel/kernel_cpu.c
@@ -57,7 +60,7 @@ main_vector.o:
 
 ./kernel/kernel_vector.o:	./kernel/kernel_vector.h \
 						./kernel/kernel_vector.c
-	$(C_C) $(FLAGS) -DUSE_RISCV_VECTOR	./kernel/kernel_vector.c \
+	$(C_C) $(FLAGS) $(VECTOR)	./kernel/kernel_vector.c \
 						-c \
 						-o ./kernel/kernel_vector.o
 

@@ -2,7 +2,7 @@
 // RISC-V VECTOR LOG FUNCTION Version by Cristóbal Ramírez Lazo, "Barcelona 2019"
 // This RISC-V Vector implementation is based on the original code presented by Julien Pommier
 
-#include <cstring>
+//#include <cstring>
 
 /* 
    AVX implementation of sin, cos, sincos, exp and log

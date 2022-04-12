@@ -128,6 +128,17 @@ _MMR_i64  tmp3;
 //        return y;
 //}
 
+inline _MMR_f32 __exp_2x32_scalar(_MMR_f32 x) {
+    float val[INT32_SPECIES_512];
+    memcpy(val, &x, sizeof(val));
+
+    for (int i = 0; i < INT32_SPECIES_512; ++i) {
+        val[i] = exp(val[i]);
+    }
+    return _mm512_set_ps(val[15], val[14], val[13], val[12], val[11], val[10], val[9], val[8], val[7], val[6], val[5], val[4], val[3], val[2], val[1], val[0]);
+
+}
+
 inline _MMR_f32 __exp_2xf32(_MMR_f32 x) {
 
     _MMR_f32   tmp;
